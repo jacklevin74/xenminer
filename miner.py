@@ -104,7 +104,7 @@ def verify_block(block):
 
 if __name__ == "__main__":
     blockchain = []
-    target_substr = "XEN1"
+    target_substr = "XEN11"
     num_blocks_to_mine = 20000000
 
     genesis_block = Block(0, "0", "Genesis Block", "0", "0", "0")
