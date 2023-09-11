@@ -10,7 +10,7 @@ import string
 difficulty = 1
 memory_cost = 80
 cores = 1
-account = "0x0A6969ffF003B760c97005e03ff5a9741126167A"
+account = "0xdc568dfbE609E9841044b5F63E338E78053a2163"
 
 class Block:
     def __init__(self, index, prev_hash, data, valid_hash, random_data, attempts):
