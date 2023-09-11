@@ -8,7 +8,7 @@ import string
 
 
 difficulty = 1
-memory_cost = 80
+memory_cost = 8
 cores = 1
 account = "0x0A6969ffF003B760c97005e03ff5a9741126167A"
 
@@ -48,20 +48,32 @@ def generate_random_sha256(max_length=128):
     sha256.update(random_string.encode('utf-8'))
     return sha256.hexdigest()
 
+from tqdm import tqdm
+import time
+
 def mine_block(target_substr, prev_hash):
     argon2_hasher = argon2.using(time_cost=difficulty, salt=b"XEN10082022XEN", memory_cost=memory_cost, parallelism=cores, hash_len = 64)
     attempts = 0
     random_data = None
     start_time = time.time()
+    
+    with tqdm(total=None, dynamic_ncols=True, desc="Mining", unit="hash") as pbar:
+        while True:
+            attempts += 1
+            random_data = generate_random_sha256()
+            hashed_data = argon2_hasher.hash(random_data + prev_hash)
+    
+            if target_substr in hashed_data[-87:]:
+                print(f"\nFound valid hash after {attempts} attempts: {hashed_data}")
+                break
 
-    while True:
-        attempts += 1
-        random_data = generate_random_sha256()
-        hashed_data = argon2_hasher.hash(random_data + prev_hash)
+            pbar.update(1)
 
-        if target_substr in hashed_data[-87:]:
-            print(f"Found valid hash after {attempts} attempts: {hashed_data}")
-            break
+            if attempts % 100 == 0:  # Update every 100 attempts
+                elapsed_time = time.time() - start_time
+                hashes_per_second = attempts / elapsed_time
+                pbar.set_postfix({"Hash/s": hashes_per_second}, refresh=True)
+
 
     end_time = time.time()
     elapsed_time = end_time - start_time
@@ -79,7 +91,7 @@ def mine_block(target_substr, prev_hash):
     print (payload)
 
     # Make the POST request
-    response = requests.post('http://proofofwork.mooo.com/verify', json=payload)
+    response = requests.post('http://xenminer.mooo.com/verify', json=payload)
 
     # Print the HTTP status code
     print("HTTP Status Code:", response.status_code)
@@ -128,4 +140,3 @@ if __name__ == "__main__":
     blockchain_json = json.dumps(blockchain, indent=4)
     with open("blockchain.json", "w") as f:
         f.write(blockchain_json)
-
