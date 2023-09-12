@@ -8,7 +8,7 @@ import string
 
 
 difficulty = 1
-memory_cost = 8
+memory_cost = 120
 cores = 1
 account = "0x0A6969ffF003B760c97005e03ff5a9741126167A"
 
