@@ -224,6 +224,7 @@ def index():
         result = '0x3B9ACA00'  # Example gas price, 1 Gwei in hexadecimal
 
     elif data['method'] == 'eth_sendRawTransaction':
+        print (data)
         raw_tx = data['params'][0]
         print("Raw TX: ", raw_tx)
         try:
@@ -256,6 +257,20 @@ def broadcast_transaction(raw_tx):
     fake_tx_hash = '0x' + secrets.token_hex(32)
     return fake_tx_hash
 
+from Crypto.Hash import keccak
+import rlp
+from coincurve import PublicKey
+
+def get_recovered_address(raw_tx):
+    w3 = Web3()
+    try:
+        # Recover the sender's address from the raw transaction
+        recovered_address = w3.eth.account.recover_transaction(raw_tx)
+        return recovered_address
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
 
 def handle_raw_transaction(raw_tx):
     # Decode the raw transaction
@@ -271,11 +286,13 @@ def handle_raw_transaction(raw_tx):
         gas_price = decoded_tx.gasprice
         nonce = decoded_tx.nonce
         input_data = decoded_tx.data
+        # Validate from address
+        validated_from = get_recovered_address(raw_tx)
 
-        transfer (from_account.hex(), to_account.hex(), value/1e18)
+        transfer (validated_from, to_account.hex(), value/1e18)
 
         # Print the decoded transaction details
-        print(f"From Account: {from_account.hex()}")
+        print(f"From Account: {validated_from}")
         print(f"To Account: {to_account.hex() if to_account else 'Contract Creation'}")
         print(f"Value: {value} wei")
         print(f"Gas: {gas}")
