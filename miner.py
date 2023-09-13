@@ -79,8 +79,7 @@ def mine_block(target_substr, prev_hash):
                     print(f"\nUpdating memory_cost to {new_memory_cost}")
                     memory_cost = new_memory_cost
                     print(f"Continuing to mine blocks with new difficulty")
-                    break
-
+                    return
 
             random_data = generate_random_sha256()
             hashed_data = argon2_hasher.hash(random_data + prev_hash)
@@ -147,11 +146,18 @@ if __name__ == "__main__":
 
     for i in range(1, num_blocks_to_mine + 1):
         print(f"Mining block {i}...")
-        random_data, new_valid_hash, attempts, hashes_per_second = mine_block(target_substr, blockchain[-1]['hash'])
-        new_block = Block(i, blockchain[-1]['hash'], f"Block {i} Data", new_valid_hash, random_data, attempts)
-        new_block.to_dict()['hashes_per_second'] = hashes_per_second
-        blockchain.append(new_block.to_dict())
-        print(f"New Block Added: {new_block.hash}")
+        result = mine_block(target_substr, blockchain[-1]['hash'])
+    
+        # Check if mine_block returned None; if so, skip to the next iteration.
+        if result is None:
+            continue
+    
+    random_data, new_valid_hash, attempts, hashes_per_second = result
+    new_block = Block(i, blockchain[-1]['hash'], f"Block {i} Data", new_valid_hash, random_data, attempts)
+    new_block.to_dict()['hashes_per_second'] = hashes_per_second
+    blockchain.append(new_block.to_dict())
+    print(f"New Block Added: {new_block.hash}")
+
 
     # Verification
     for i, block in enumerate(blockchain[1:], 1):
