@@ -93,13 +93,13 @@ def mine_block(target_substr, prev_hash):
 
             if attempts % 100 == 0:  # Update every 100 attempts
                 elapsed_time = time.time() - start_time
-                hashes_per_second = attempts / elapsed_time
+                hashes_per_second = attempts / (elapsed_time + 1e-9)
                 pbar.set_postfix({"Hash/s": hashes_per_second}, refresh=True)
 
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    hashes_per_second = attempts / elapsed_time
+    hashes_per_second = attempts / (elapsed_time + 1e-9)
 
     # Prepare the payload
     payload = {
