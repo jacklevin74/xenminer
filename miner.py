@@ -99,7 +99,8 @@ def mine_block(target_substr, prev_hash):
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    hashes_per_second = attempts / elapsed_time
+    if elapsed_time > 0:
+        hashes_per_second = attempts / elapsed_time
 
     # Prepare the payload
     payload = {
