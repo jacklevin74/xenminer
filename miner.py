@@ -5,7 +5,7 @@ from passlib.hash import argon2
 import hashlib
 from random import choice, randrange
 import string
-
+import threading
 
 difficulty = 1
 memory_cost = 8 
@@ -40,6 +40,19 @@ class Block:
             "attempts": self.attempts
         }
 
+updated_memory_cost = 8 # just initialize it
+
+def update_memory_cost_periodically():
+    global memory_cost
+    global updated_memory_cost
+    time.sleep(10)  # start checking in 10 seconds after launch 
+    while True:
+        updated_memory_cost = fetch_difficulty_from_server()
+        print (f"Checking for new difficulty:", updated_memory_cost)
+        if updated_memory_cost != memory_cost:
+            print(f"Updating difficulty to {updated_memory_cost}")
+        time.sleep(30)  # Fetch every 60 seconds
+
 # Function to get difficulty level from the server
 def fetch_difficulty_from_server():
     try:
@@ -63,7 +76,8 @@ import time
 
 def mine_block(target_substr, prev_hash):
     global memory_cost  # Make it global so that we can update it
-    memory_cost=fetch_difficulty_from_server()
+    global updated_memory_cost  # Make it global so that we can receive updates
+    #memory_cost=fetch_difficulty_from_server()
     argon2_hasher = argon2.using(time_cost=difficulty, salt=b"XEN10082022XEN", memory_cost=memory_cost, parallelism=cores, hash_len = 64)
     attempts = 0
     random_data = None
@@ -73,11 +87,10 @@ def mine_block(target_substr, prev_hash):
         while True:
             attempts += 1
             # Update difficulty every 1,000,000 attempts
-            if attempts % 3_000_000 == 0:
-                new_memory_cost = fetch_difficulty_from_server()
-                if new_memory_cost != memory_cost:
-                    print(f"\nUpdating memory_cost to {new_memory_cost}")
-                    memory_cost = new_memory_cost
+            if attempts % 100_000 == 0:
+                #print ("memory_cost and updated_memory_cost ", memory_cost, updated_memory_cost)
+                if updated_memory_cost != memory_cost:
+                    memory_cost = updated_memory_cost
                     print(f"Continuing to mine blocks with new difficulty")
                     return
 
@@ -139,6 +152,11 @@ if __name__ == "__main__":
     blockchain = []
     target_substr = "XEN11"
     num_blocks_to_mine = 20000000
+    
+    #Start difficulty monitoring thread
+    difficulty_thread = threading.Thread(target=update_memory_cost_periodically)
+    difficulty_thread.daemon = True  # This makes the thread exit when the main program exits
+    difficulty_thread.start()
 
     genesis_block = Block(0, "0", "Genesis Block", "0", "0", "0")
     blockchain.append(genesis_block.to_dict())
