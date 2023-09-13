@@ -1,0 +1,4 @@
+passlib
+requests
+tqdm
+argon2_cffi 
