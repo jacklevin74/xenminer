@@ -73,7 +73,7 @@ def mine_block(target_substr, prev_hash):
         while True:
             attempts += 1
             # Update difficulty every 1,000,000 attempts
-            if attempts % 1_000_000 == 0:
+            if attempts % 3_000_000 == 0:
                 new_memory_cost = fetch_difficulty_from_server()
                 if new_memory_cost != memory_cost:
                     print(f"\nUpdating memory_cost to {new_memory_cost}")
