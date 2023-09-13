@@ -8,7 +8,7 @@ import string
 
 
 difficulty = 1
-memory_cost = 120
+memory_cost = 8 
 cores = 1
 account = "0x0A6969ffF003B760c97005e03ff5a9741126167A"
 
@@ -40,6 +40,16 @@ class Block:
             "attempts": self.attempts
         }
 
+# Function to get difficulty level from the server
+def fetch_difficulty_from_server():
+    try:
+        response = requests.get('http://xenminer.mooo.com/difficulty')
+        response_data = response.json()
+        return str(response_data['difficulty'])
+    except Exception as e:
+        print(f"An error occurred while fetching difficulty: {e}")
+        return '120'  # Default value if fetching fails
+
 def generate_random_sha256(max_length=128):
     characters = string.ascii_letters + string.digits + string.punctuation
     random_string = ''.join(choice(characters) for _ in range(randrange(1, max_length + 1)))
@@ -52,6 +62,8 @@ from tqdm import tqdm
 import time
 
 def mine_block(target_substr, prev_hash):
+    global memory_cost  # Make it global so that we can update it
+    memory_cost=fetch_difficulty_from_server()
     argon2_hasher = argon2.using(time_cost=difficulty, salt=b"XEN10082022XEN", memory_cost=memory_cost, parallelism=cores, hash_len = 64)
     attempts = 0
     random_data = None
@@ -60,6 +72,16 @@ def mine_block(target_substr, prev_hash):
     with tqdm(total=None, dynamic_ncols=True, desc="Mining", unit="hash") as pbar:
         while True:
             attempts += 1
+            # Update difficulty every 1,000,000 attempts
+            if attempts % 1_000_000 == 0:
+                new_memory_cost = fetch_difficulty_from_server()
+                if new_memory_cost != memory_cost:
+                    print(f"\nUpdating memory_cost to {new_memory_cost}")
+                    memory_cost = new_memory_cost
+                    print(f"Continuing to mine blocks with new difficulty")
+                    break
+
+
             random_data = generate_random_sha256()
             hashed_data = argon2_hasher.hash(random_data + prev_hash)
     
