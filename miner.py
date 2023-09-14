@@ -51,7 +51,7 @@ def update_memory_cost_periodically():
         print (f"Checking for new difficulty:", updated_memory_cost)
         if updated_memory_cost != memory_cost:
             print(f"Updating difficulty to {updated_memory_cost}")
-        time.sleep(30)  # Fetch every 60 seconds
+        time.sleep(60)  # Fetch every 60 seconds
 
 # Function to get difficulty level from the server
 def fetch_difficulty_from_server():
@@ -124,18 +124,29 @@ def mine_block(target_substr, prev_hash):
 
     print (payload)
 
-    # Make the POST request
-    response = requests.post('http://xenminer.mooo.com/verify', json=payload)
+    max_retries = 2
+    retries = 0
 
-    # Print the HTTP status code
-    print("HTTP Status Code:", response.status_code)
+    while retries <= max_retries:
+        # Make the POST request
+        response = requests.post('http://xenminer.mooo.com/verify', json=payload)
 
-    # Print the server's response
-    try:
-        print("Server Response:", response.json())
-    except Exception as e:
-        print("An error occurred:", e)
+        # Print the HTTP status code
+        print("HTTP Status Code:", response.status_code)
 
+        if response.status_code != 500:  # If status code is not 500, break the loop
+            break
+        
+        retries += 1
+        print(f"Retrying... ({retries}/{max_retries})")
+        time.sleep(10)  # You can adjust the sleep time
+
+
+        # Print the server's response
+        try:
+            print("Server Response:", response.json())
+        except Exception as e:
+            print("An error occurred:", e)
 
     return random_data, hashed_data, attempts, hashes_per_second
 
