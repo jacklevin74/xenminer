@@ -48,7 +48,6 @@ def update_memory_cost_periodically():
     time.sleep(10)  # start checking in 10 seconds after launch 
     while True:
         updated_memory_cost = fetch_difficulty_from_server()
-        print (f"Checking for new difficulty:", updated_memory_cost)
         if updated_memory_cost != memory_cost:
             print(f"Updating difficulty to {updated_memory_cost}")
         time.sleep(60)  # Fetch every 60 seconds
