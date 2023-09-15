@@ -6,6 +6,7 @@ import hashlib
 from random import choice, randrange
 import string
 import threading
+import re
 
 difficulty = 1
 memory_cost = 8 
