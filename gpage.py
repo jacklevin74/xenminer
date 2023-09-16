@@ -25,10 +25,18 @@ import sqlite3
 
 app = Flask(__name__)
 
-
 # Initialize cache dictionary and last fetched time
 difficulty_cache = {}
 last_fetched_time = {}
+
+
+# Specify the file path where you want to save the messages
+log_file_path = './error_log_filr.log'
+
+def log_verification_failure(message, account):
+    with open(log_file_path, 'a') as log_file:
+        log_file.write(f"Issued 401: {account}. Message: {message}\n")
+
 
 # Function to get difficulty level
 def get_difficulty(account=None):
@@ -180,7 +188,7 @@ def hash_rate():
 # Temporary storage for batch insertion
 account_attempts_batch = []
 blocks_batch = []
-batch_size = 10
+batch_size = 1
 
 @app.route('/verify', methods=['POST'])
 def verify_hash():
@@ -198,13 +206,20 @@ def verify_hash():
     # Get difficulty level from the database
     difficulty = get_difficulty()
     if f'm={difficulty}' not in hash_to_verify:
-        return jsonify({"message": f"Hash does not contain 'm={difficulty}'. Your memory_cost setting in your miner will be autoadjusted."}), 401
+        error_message = f"Hash does not contain 'm={difficulty}'. Your memory_cost setting in your miner will be autoadjusted."
+        log_verification_failure(error_message, account)
+        return jsonify({"message": error_message}), 401
 
     if 'XEN11' not in hash_to_verify[-87:]:
-        return jsonify({"message": "Hash does not contain 'XEN11' in the last 87 characters. Adjust target_substr in your miner."}), 401
+        error_message = "Hash does not contain 'XEN11' in the last 87 characters. Adjust target_substr in your miner."
+        log_verification_failure(error_message, account)
+        return jsonify({"message": error_message}), 401
 
     if len(hash_to_verify) > 136:
-        return jsonify({"message": "Length of hash_to_verify should not be greater than 136 characters."}), 401
+        error_message = "Length of hash_to_verify should not be greater than 136 characters."
+        log_verification_failure(error_message, account)
+        return jsonify({"message": error_message}), 401
+
 
     if argon2.verify(key, hash_to_verify):
         try:
@@ -215,6 +230,7 @@ def verify_hash():
             # Check if batch size is reached
             if len(account_attempts_batch) >= batch_size:
                 conn = sqlite3.connect('blocks.db')
+                conn.execute('PRAGMA journal_mode = wal')
                 c = conn.cursor()
 
                 # Batch insert for account_attempts
@@ -260,3 +276,4 @@ def total_blocks2():
     conn.close()
 
     return jsonify({"total_blocks": result[0]}), 200
+
