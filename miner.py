@@ -99,6 +99,10 @@ def mine_block(target_substr, prev_hash):
     
             if target_substr in hashed_data[-87:]:
                 print(f"\nFound valid hash after {attempts} attempts: {hashed_data}")
+                capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
+                if capital_count >= 65:
+                    print (f"Superblock found")
+
                 break
 
             pbar.update(1)
@@ -135,6 +139,7 @@ def mine_block(target_substr, prev_hash):
         print("HTTP Status Code:", response.status_code)
 
         if response.status_code != 500:  # If status code is not 500, break the loop
+            print("Server Response:", response.json())
             break
         
         retries += 1
