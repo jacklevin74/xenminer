@@ -1,4 +1,5 @@
 import sqlite3
+import sys
 import argparse
 import requests
 from passlib.hash import argon2
@@ -107,6 +108,10 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
     response = requests.get(url)
     if response.status_code == 200:
         records = json.loads(response.text)
+        # Check if the number of records is less than 100
+        if len(records) < 100:
+            print("All sealed blocks are current")
+            sys.exit()
         verified_hashes = []
         #print ("Fetching block_id ", block_id);
         for record in records:
@@ -127,8 +132,8 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             block_hash = hash_value(block_contents)
 
             # Insert new block into the blockchain table
-            c.execute('INSERT INTO blockchain (prev_hash, merkle_root, records_json, block_hash) VALUES (?, ?, ?, ?)',
-                      (prev_hash, merkle_root, records_json_blob, block_hash))
+            c.execute('INSERT INTO blockchain (id, prev_hash, merkle_root, records_json, block_hash) VALUES (?,?, ?, ?, ?)',
+                      (block_id, prev_hash, merkle_root, records_json_blob, block_hash))
             print ("Fetched block with merkleroot ", block_id, merkle_root)
             conn.commit()
 
