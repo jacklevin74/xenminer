@@ -129,7 +129,6 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
         #print ("Block Size Length: ", len(records))
         # Check if the number of records is less than 100
         if len(records) < 100:
-            validate()
             print("All sealed blocks are current")
             sys.exit()
         verified_hashes = []
@@ -212,3 +211,4 @@ def verify_block_hashes():
 
 # Call verify_block_hashes after your existing code
 #verify_block_hashes()
+validate()
