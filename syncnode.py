@@ -1,8 +1,25 @@
 import sqlite3
+import argparse
 import requests
 from passlib.hash import argon2
 import hashlib
 import json
+
+
+# Create the parser
+parser = argparse.ArgumentParser(description="Your script description")
+
+# Add Ethereum address argument
+parser.add_argument("ethereum_address", type=str, help="Your Ethereum address")
+
+# Parse the arguments
+args = parser.parse_args()
+
+# Set the Ethereum address as a global variable
+global my_ethereum_address
+my_ethereum_address = args.ethereum_address
+
+
 
 def hash_value(value):
     return hashlib.sha256(value.encode()).hexdigest()
@@ -118,6 +135,19 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             # Set prev_hash for the next iteration
             prev_hash = block_hash
 
+c.execute('SELECT id, id, block_hash FROM blockchain order by id desc limit 1')
+row = c.fetchone()
+if row:
+    total_count, last_block_id, last_block_hash = row
+    validation_data = {
+            "total_count": total_count,
+            "my_ethereum_address": my_ethereum_address,
+            "last_block_id": last_block_id,
+            "last_block_hash": last_block_hash
+            }
+    print (validation_data)
+    requests.post("http://xenminer.mooo.com/validate", json=validation_data)
+
 conn.close()
 
 def verify_block_hashes():
@@ -163,7 +193,9 @@ def verify_block_hashes():
         prev_hash = block_hash
 
     print("All blocks are valid.")
+
+
     return True
 
 # Call verify_block_hashes after your existing code
-verify_block_hashes()
+#verify_block_hashes()
