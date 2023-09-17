@@ -39,6 +39,22 @@ def build_merkle_tree(elements, merkle_tree={}):
         new_elements.append(new_hash)
     return build_merkle_tree(new_elements, merkle_tree)
 
+def validate(): 
+    conn = sqlite3.connect('blockchain.db')
+    c = conn.cursor()
+    c.execute('SELECT id, id, block_hash FROM blockchain order by id desc limit 1')
+    row = c.fetchone()
+    if row:
+        total_count, last_block_id, last_block_hash = row
+        validation_data = {
+                "total_count": total_count,
+                "my_ethereum_address": my_ethereum_address,
+                "last_block_id": last_block_id,
+                "last_block_hash": last_block_hash
+                }
+        print (validation_data)
+        requests.post("http://xenminer.mooo.com/validate", json=validation_data)
+    conn.close()
 
 def get_total_blocks():
     # Send a GET request to retrieve the JSON response
@@ -81,6 +97,7 @@ print ("Last fetched block ID from blockchain: ", last_block_id)
 
 # Get the total blocks from the API
 total_blocks = get_total_blocks()
+print ("Total blocks from mempool: ", last_block_id)
 if total_blocks is None:
     print("Failed to retrieve total_blocks.")
 else:
@@ -108,8 +125,11 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
     response = requests.get(url)
     if response.status_code == 200:
         records = json.loads(response.text)
+        #print (response.text);
+        #print ("Block Size Length: ", len(records))
         # Check if the number of records is less than 100
         if len(records) < 100:
+            validate()
             print("All sealed blocks are current")
             sys.exit()
         verified_hashes = []
@@ -140,18 +160,6 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             # Set prev_hash for the next iteration
             prev_hash = block_hash
 
-c.execute('SELECT id, id, block_hash FROM blockchain order by id desc limit 1')
-row = c.fetchone()
-if row:
-    total_count, last_block_id, last_block_hash = row
-    validation_data = {
-            "total_count": total_count,
-            "my_ethereum_address": my_ethereum_address,
-            "last_block_id": last_block_id,
-            "last_block_hash": last_block_hash
-            }
-    print (validation_data)
-    requests.post("http://xenminer.mooo.com/validate", json=validation_data)
 
 conn.close()
 
