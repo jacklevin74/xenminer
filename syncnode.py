@@ -132,7 +132,7 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             block_hash = hash_value(block_contents)
 
             # Insert new block into the blockchain table
-            c.execute('INSERT INTO blockchain (id, prev_hash, merkle_root, records_json, block_hash) VALUES (?,?, ?, ?, ?)',
+            c.execute('REPLACE INTO blockchain (id, prev_hash, merkle_root, records_json, block_hash) VALUES (?,?, ?, ?, ?)',
                       (block_id, prev_hash, merkle_root, records_json_blob, block_hash))
             print ("Fetched block with merkleroot ", block_id, merkle_root)
             conn.commit()
