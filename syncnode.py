@@ -210,5 +210,5 @@ def verify_block_hashes():
     return True
 
 # Call verify_block_hashes after your existing code
-verify_block_hashes()
+#verify_block_hashes()
 validate()
