@@ -74,6 +74,13 @@ def generate_random_sha256(max_length=128):
 from tqdm import tqdm
 import time
 
+# ANSI escape codes
+RED = "\033[31m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+BLUE = "\033[34m"
+RESET = "\033[0m"
+
 def mine_block(target_substr, prev_hash):
     global memory_cost  # Make it global so that we can update it
     global updated_memory_cost  # Make it global so that we can receive updates
@@ -83,39 +90,35 @@ def mine_block(target_substr, prev_hash):
     random_data = None
     start_time = time.time()
     
-    with tqdm(total=None, dynamic_ncols=True, desc="Mining", unit="hash") as pbar:
+    with tqdm(total=None, dynamic_ncols=True, desc=f"{GREEN}Mining{RESET}", unit=f" {GREEN}Hashes{RESET}") as pbar:
         while True:
             attempts += 1
-            # Update difficulty every 1,000,000 attempts
+        
             if attempts % 100_000 == 0:
-                #print ("memory_cost and updated_memory_cost ", memory_cost, updated_memory_cost)
                 if updated_memory_cost != memory_cost:
                     memory_cost = updated_memory_cost
-                    print(f"Continuing to mine blocks with new difficulty")
+                    print(f"{BLUE}Continuing to mine blocks with new difficulty{RESET}")
                     return
 
             random_data = generate_random_sha256()
             hashed_data = argon2_hasher.hash(random_data + prev_hash)
-    
+
             if target_substr in hashed_data[-87:]:
-                print(f"\nFound valid hash after {attempts} attempts: {hashed_data}")
+                print(f"\n{GREEN}Found valid hash after {attempts} attempts: {hashed_data}{RESET}")
                 capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
+            
                 if capital_count >= 65:
-                    print (f"Superblock found")
+                    print(f"{RED}Superblock found{RESET}")
 
                 break
 
             pbar.update(1)
 
-            if attempts % 100 == 0:  # Update every 100 attempts
+            if attempts % 100 == 0:
                 elapsed_time = time.time() - start_time
                 hashes_per_second = attempts / (elapsed_time + 1e-9)
-                pbar.set_postfix({"Hash/s": hashes_per_second}, refresh=True)
+                #pbar.set_postfix({"Hash/s": f"{YELLOW}{hashes_per_second}{RESET}"}, refresh=True)
 
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    hashes_per_second = attempts / (elapsed_time + 1e-9)
 
     # Prepare the payload
     payload = {
@@ -178,14 +181,18 @@ if __name__ == "__main__":
     blockchain.append(genesis_block.to_dict())
     print(f"Genesis Block: {genesis_block.hash}")
 
-    for i in range(1, num_blocks_to_mine + 1):
+    i = 1
+    while i <= num_blocks_to_mine:
         print(f"Mining block {i}...")
         result = mine_block(target_substr, blockchain[-1]['hash'])
-    
-        # Check if mine_block returned None; if so, skip to the next iteration.
+
         if result is None:
+            print(f"{RED}Restarting mining round{RESET}")
+                # Skip the increment of `i` and continue the loop
             continue
-    
+        else:
+            i += 1  
+
     random_data, new_valid_hash, attempts, hashes_per_second = result
     new_block = Block(i, blockchain[-1]['hash'], f"Block {i} Data", new_valid_hash, random_data, attempts)
     new_block.to_dict()['hashes_per_second'] = hashes_per_second
