@@ -16,42 +16,39 @@ cursor.execute("""
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 """)
-conn.commit()
 
 # Fetch all records from the 'blockchain' table
 cursor.execute("SELECT records_json FROM blockchain")
 records = cursor.fetchall()
 
-# Initialize counter for periodic progress check
-counter = 0
+# Placeholder for batch inserts
+all_values = []
 
-# Loop through each record and insert it into the 'blocks' table
+# Loop through each record and prepare data for batch insertion into the 'blocks' table
 for record in records:
     records_json = record[0]
     records_list = json.loads(records_json)  # Assuming records_json is in JSON format
 
     for item in records_list:
-        block_id = item.get("block_id")
         hash_to_verify = item.get("hash_to_verify")
         key = item.get("key")
         account = item.get("account")
-        created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        created_at = item.get("date")
+        all_values.append((hash_to_verify, key, account, created_at))
 
-        try:
-            cursor.execute("""
-                REPLACE INTO blocks (hash_to_verify, key, account, created_at)
-                VALUES (?, ?, ?, ?)
-            """, (hash_to_verify, key, account, created_at))
-            conn.commit()
-        except sqlite3.IntegrityError as e:
-            print(f"Integrity Error: {e}")
-        except Exception as e:
-            print(f"An error occurred: {e}")
+# Batch insert into 'blocks' table
+try:
+    cursor.executemany("""
+        REPLACE INTO blocks (hash_to_verify, key, account, created_at)
+        VALUES (?, ?, ?, ?)
+    """, all_values)
+    conn.commit()
+except sqlite3.IntegrityError as e:
+    print(f"Integrity Error: {e}")
+except Exception as e:
+    print(f"An error occurred: {e}")
 
-        # Increment the counter and check for progress
-        counter += 1
-        if counter % 10000 == 0:
-            print(f"Processed {counter} records so far.")
+print(f"Processed {len(all_values)} records.")
 
 # Close the database connection
 conn.close()
