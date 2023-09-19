@@ -34,9 +34,10 @@ last_fetched_time = {}
 log_file_path = './error_log_filr.log'
 
 def log_verification_failure(message, account):
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    log_file_path = "your_log_file.log"
     with open(log_file_path, 'a') as log_file:
-        log_file.write(f"Issued 401: {account}. Message: {message}\n")
-
+        log_file.write(f"{current_time} - Issued 401: {account}. Message: {message}\n")
 
 # Function to get difficulty level
 def get_difficulty(account=None):
@@ -122,8 +123,10 @@ def difficulty(account=None):
 
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
+    global difficulty
+    difficulty=get_difficulty()
     # Connect to the cache database
-    cache_conn = sqlite3.connect('cache.db',timeout=10)
+    cache_conn = sqlite3.connect('cache.db', timeout=10)
     cache_c = cache_conn.cursor()
 
     # Read from the cache table for leaderboard data
@@ -131,7 +134,7 @@ def leaderboard():
     results = cache_c.fetchall()
     cache_conn.close()
 
-    # You could still calculate global statistics if needed from the original database
+    # Calculate global statistics from the original blocks database
     conn = sqlite3.connect('blocks.db', timeout=10)
     c = conn.cursor()
     c.execute('''SELECT SUM(attempts) as total_attempts,
@@ -142,11 +145,32 @@ def leaderboard():
     total_attempts_per_second = total_attempts / (total_time if total_time != 0 else 1)
     conn.close()
 
+    # Get the latest rate from the difficulty database
+    diff_conn = sqlite3.connect('difficulty.db', timeout=10)
+    diff_c = diff_conn.cursor()
+    diff_c.execute("SELECT rate FROM blockrate ORDER BY id DESC LIMIT 1")
+    latest_rate = diff_c.fetchone()
+
+    diff_c.execute("SELECT total_miners FROM miners ORDER BY id DESC LIMIT 1")
+    latest_miners = diff_c.fetchone()
+    diff_conn.close()
+
+    if latest_miners:
+        latest_miners = latest_miners[0]
+    else:
+        latest_miners = 0  # Default value if no data is found
+
+    if latest_rate:
+        latest_rate = latest_rate[0]
+    else:
+        latest_rate = 0  # Default value if no rate is found
+
     leaderboard = [(rank + 1, account, total_blocks, round(hashes_per_second, 2), super_blocks)
                    for rank, (account, total_blocks, hashes_per_second, super_blocks) in enumerate(results)]
 
     return render_template('leaderboard4.html', leaderboard=leaderboard,
-                           total_attempts_per_second=int(round(total_attempts_per_second, 2) / 1000))
+                           total_attempts_per_second=int(round(total_attempts_per_second, 2) / 1000),
+                           latest_rate=latest_rate, latest_miners=latest_miners, difficulty=difficulty)
 
 
 @app.route('/total_blocks', methods=['GET'])
@@ -197,6 +221,7 @@ def verify_hash():
     hash_to_verify = data.get('hash_to_verify')
     key = data.get('key')
     account = data.get('account')
+    account = account.lower()
     attempts = data.get('attempts')
 
     # Check for missing data
@@ -205,7 +230,12 @@ def verify_hash():
 
     # Get difficulty level from the database
     difficulty = get_difficulty()
-    if f'm={difficulty}' not in hash_to_verify:
+    submitted_difficulty = int(re.search(r'm=(\d+)', hash_to_verify).group(1))
+    #if f'm={difficulty}' not in hash_to_verify:
+    #print ("Compare diff ", submitted_difficulty, int(difficulty))
+    if submitted_difficulty < int(difficulty): 
+
+        print ("This Generates 401 for difficulty being too low", submitted_difficulty, int(difficulty))
         error_message = f"Hash does not contain 'm={difficulty}'. Your memory_cost setting in your miner will be autoadjusted."
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401
@@ -215,7 +245,7 @@ def verify_hash():
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401
 
-    if len(hash_to_verify) > 136:
+    if len(hash_to_verify) > 137:
         error_message = "Length of hash_to_verify should not be greater than 136 characters."
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401
@@ -233,15 +263,19 @@ def verify_hash():
                 conn.execute('PRAGMA journal_mode = wal')
                 c = conn.cursor()
 
-                # Batch insert for account_attempts
-                c.executemany('''INSERT INTO account_attempts (account, timestamp, attempts)
-                                VALUES (?, ?, ?)''', account_attempts_batch)
+                conn.execute('BEGIN TRANSACTION')
+                try:
+                    c.executemany('''INSERT OR IGNORE INTO account_attempts (account, timestamp, attempts)
+                        VALUES (?, ?, ?)''', account_attempts_batch)
 
-                # Batch insert for blocks
-                c.executemany('''INSERT INTO blocks (hash_to_verify, key, account)
-                                VALUES (?, ?, ?)''', blocks_batch)
+                    c.executemany('''INSERT OR IGNORE INTO blocks (hash_to_verify, key, account)
+                        VALUES (?, ?, ?)''', blocks_batch)
+                except:
+                    conn.rollback()
+                    raise
+                finally:
+                    conn.commit()
 
-                conn.commit()
                 conn.close()
 
                 # Clear the batches
@@ -253,7 +287,9 @@ def verify_hash():
             else:
                 return jsonify({"message": "Hash verified successfully, waiting for batch commit."}), 200
 
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError as e:
+            print(f"Integrity Error: {e} for key ", key)
+            conn.rollback()
             return jsonify({"message": "Duplicate key rejected."}), 400
 
         finally:
@@ -262,6 +298,57 @@ def verify_hash():
 
     else:
         return jsonify({"message": "Hash verification failed."}), 401
+
+@app.route('/validate', methods=['POST'])
+def store_consensus():
+    data = request.json
+    total_count = data.get('total_count')
+    my_ethereum_address = data.get('my_ethereum_address')
+    last_block_id = data.get('last_block_id')
+    last_block_hash = data.get('last_block_hash')
+
+    try:
+        conn = sqlite3.connect('blocks.db')
+        c = conn.cursor()
+        c.execute('''INSERT INTO consensus (total_count, my_ethereum_address, last_block_id, last_block_hash)
+                     VALUES (?, ?, ?, ?)''',
+                     (total_count, my_ethereum_address, last_block_id, last_block_hash))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+@app.route('/latest_blockrate', methods=['GET'])
+def get_latest_blockrate():
+    try:
+        # Connect to the difficulty database
+        conn = sqlite3.connect('difficulty.db')
+        cursor = conn.cursor()
+
+        # Query the latest blockrate using "ORDER BY id DESC LIMIT 1" for better performance
+        cursor.execute("SELECT id, date, rate FROM blockrate ORDER BY id DESC LIMIT 1")
+        record = cursor.fetchone()
+
+        if record is None:
+            return jsonify({"error": "No blockrate data found"}), 404
+
+        # Close the database connection
+        conn.close()
+
+        # Prepare the result in JSON format
+        result = {
+            "id": record[0],
+            "date": record[1],
+            "rate": record[2]
+        }
+
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 @app.route('/total_blocks2', methods=['GET'])
 def total_blocks2():
