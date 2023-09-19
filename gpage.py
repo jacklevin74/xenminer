@@ -29,6 +29,11 @@ app = Flask(__name__)
 difficulty_cache = {}
 last_fetched_time = {}
 
+from datetime import datetime
+def is_within_five_minutes_of_hour():
+    timestamp = datetime.now()
+    minutes = timestamp.minute
+    return 0 <= minutes < 5 or 55 <= minutes < 60
 
 # Specify the file path where you want to save the messages
 log_file_path = './error_log_filr.log'
@@ -221,7 +226,7 @@ def verify_hash():
     hash_to_verify = data.get('hash_to_verify')
     key = data.get('key')
     account = data.get('account')
-    account = account.lower()
+    account = account.lower() if account is not None else None
     attempts = data.get('attempts')
 
     # Check for missing data
@@ -240,13 +245,22 @@ def verify_hash():
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401
 
-    if 'XEN11' not in hash_to_verify[-87:]:
-        error_message = "Hash does not contain 'XEN11' in the last 87 characters. Adjust target_substr in your miner."
+    stored_targets = ['XEN11', 'XUNI']  # You can dynamically populate this list based on your needs.
+    found = False
+    for target in stored_targets:
+        if target in hash_to_verify[-87:]:
+            found = True
+            print ("Found Target: ", target)
+
+    if not found:
+        error_message = f"Hash does not contain any of the valid targets {stored_targets} in the last 87 characters. Adjust target_substr in your miner."
         log_verification_failure(error_message, account)
+        print (error_message, hash_to_verify[-87:])
         return jsonify({"message": error_message}), 401
 
     if len(hash_to_verify) > 137:
-        error_message = "Length of hash_to_verify should not be greater than 136 characters."
+        error_message = "Length of hash_to_verify should not be greater than 137 characters."
+        print (error_message)
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401
 
@@ -254,8 +268,17 @@ def verify_hash():
     if argon2.verify(key, hash_to_verify):
         try:
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            is_xen11_present = 'XEN11' in hash_to_verify[-87:]
+            is_nex1_present = 'XUNI' in hash_to_verify[-87:]
+
+            # If XUNI is present and time is within 5 minutes of the hour, then append to blocks_batch
+            if is_nex1_present and is_within_five_minutes_of_hour():
+                blocks_batch.append((hash_to_verify, key, account))
+            elif is_xen11_present:  # no time restrictions for XEN11
+                print ("XEN11 hash added to batch")
+                blocks_batch.append((hash_to_verify, key, account))
+
             account_attempts_batch.append((account, timestamp, attempts))
-            blocks_batch.append((hash_to_verify, key, account))
 
             # Check if batch size is reached
             if len(account_attempts_batch) >= batch_size:
@@ -297,7 +320,9 @@ def verify_hash():
                 conn.close()
 
     else:
+        print ("Hash verification failed")
         return jsonify({"message": "Hash verification failed."}), 401
+
 
 @app.route('/validate', methods=['POST'])
 def store_consensus():
