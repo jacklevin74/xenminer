@@ -94,7 +94,7 @@ def mine_block(target_substr, prev_hash):
         while True:
             attempts += 1
         
-            if attempts % 100_000 == 0:
+            if attempts % 100 == 0:
                 if updated_memory_cost != memory_cost:
                     memory_cost = updated_memory_cost
                     print(f"{BLUE}Continuing to mine blocks with new difficulty{RESET}")
@@ -114,10 +114,10 @@ def mine_block(target_substr, prev_hash):
 
             pbar.update(1)
 
-            if attempts % 100 == 0:
+            if attempts % 10 == 0:
                 elapsed_time = time.time() - start_time
                 hashes_per_second = attempts / (elapsed_time + 1e-9)
-                #pbar.set_postfix({"Hash/s": f"{YELLOW}{hashes_per_second}{RESET}"}, refresh=True)
+                pbar.set_postfix({"Difficulty": f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
 
 
     # Prepare the payload
