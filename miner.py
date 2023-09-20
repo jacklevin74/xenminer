@@ -9,7 +9,7 @@ import threading
 import re
 
 difficulty = 1
-memory_cost = 8 
+memory_cost = 1500 
 cores = 1
 account = "0x0A6969ffF003B760c97005e03ff5a9741126167A"
 
@@ -41,7 +41,7 @@ class Block:
             "attempts": self.attempts
         }
 
-updated_memory_cost = 8 # just initialize it
+updated_memory_cost = 1500 # just initialize it
 
 def update_memory_cost_periodically():
     global memory_cost
@@ -61,7 +61,7 @@ def fetch_difficulty_from_server():
         return str(response_data['difficulty'])
     except Exception as e:
         print(f"An error occurred while fetching difficulty: {e}")
-        return '120'  # Default value if fetching fails
+        return '2000'  # Default value if fetching fails
 
 def generate_random_sha256(max_length=128):
     characters = string.ascii_letters + string.digits + string.punctuation
@@ -81,9 +81,10 @@ YELLOW = "\033[33m"
 BLUE = "\033[34m"
 RESET = "\033[0m"
 
-def mine_block(target_substr, prev_hash):
+def mine_block(stored_targets, prev_hash):
     global memory_cost  # Make it global so that we can update it
     global updated_memory_cost  # Make it global so that we can receive updates
+    found_valid_hash = False
     #memory_cost=fetch_difficulty_from_server()
     argon2_hasher = argon2.using(time_cost=difficulty, salt=b"XEN10082022XEN", memory_cost=memory_cost, parallelism=cores, hash_len = 64)
     attempts = 0
@@ -103,14 +104,16 @@ def mine_block(target_substr, prev_hash):
             random_data = generate_random_sha256()
             hashed_data = argon2_hasher.hash(random_data + prev_hash)
 
-            if target_substr in hashed_data[-87:]:
-                print(f"\n{GREEN}Found valid hash after {attempts} attempts: {hashed_data}{RESET}")
-                capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
-            
-                if capital_count >= 65:
-                    print(f"{RED}Superblock found{RESET}")
+            for target in stored_targets:
+                if target in hashed_data[-87:]:
+                    print(f"\n{RED}Found valid hash for target {target} after {attempts} attempts{RESET}")
+                    capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
 
-                break
+                    if capital_count >= 65:
+                        print(f"{RED}Superblock found{RESET}")
+
+                    found_valid_hash = True
+                    break
 
             pbar.update(1)
 
@@ -118,6 +121,9 @@ def mine_block(target_substr, prev_hash):
                 elapsed_time = time.time() - start_time
                 hashes_per_second = attempts / (elapsed_time + 1e-9)
                 pbar.set_postfix({"Difficulty": f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
+
+            if found_valid_hash:
+                break
 
 
     # Prepare the payload
@@ -169,7 +175,7 @@ def verify_block(block):
 
 if __name__ == "__main__":
     blockchain = []
-    target_substr = "XEN11"
+    stored_targets = ['XEN11', 'XUNI']
     num_blocks_to_mine = 20000000
     
     #Start difficulty monitoring thread
@@ -184,7 +190,7 @@ if __name__ == "__main__":
     i = 1
     while i <= num_blocks_to_mine:
         print(f"Mining block {i}...")
-        result = mine_block(target_substr, blockchain[-1]['hash'])
+        result = mine_block(stored_targets, blockchain[-1]['hash'])
 
         if result is None:
             print(f"{RED}Restarting mining round{RESET}")
