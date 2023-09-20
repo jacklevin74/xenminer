@@ -13,6 +13,12 @@ memory_cost = 1500
 cores = 1
 account = "0x0A6969ffF003B760c97005e03ff5a9741126167A"
 
+from datetime import datetime
+def is_within_five_minutes_of_hour():
+    timestamp = datetime.now()
+    minutes = timestamp.minute
+    return 0 <= minutes < 5 or 55 <= minutes < 60
+
 class Block:
     def __init__(self, index, prev_hash, data, valid_hash, random_data, attempts):
         self.index = index
@@ -106,14 +112,20 @@ def mine_block(stored_targets, prev_hash):
 
             for target in stored_targets:
                 if target in hashed_data[-87:]:
-                    print(f"\n{RED}Found valid hash for target {target} after {attempts} attempts{RESET}")
+                    if target == "XUNI" and is_within_five_minutes_of_hour():
+                        found_valid_hash = True
+                        break                        
+                    elif target == "XEN11":
+                        found_valid_hash = True
+                        break
+                    else:    
+                        found_valid_hash = False
+
                     capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
 
                     if capital_count >= 65:
                         print(f"{RED}Superblock found{RESET}")
 
-                    found_valid_hash = True
-                    break
 
             pbar.update(1)
 
@@ -123,6 +135,7 @@ def mine_block(stored_targets, prev_hash):
                 pbar.set_postfix({"Difficulty": f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
 
             if found_valid_hash:
+                print(f"\n{RED}Found valid hash for target {target} after {attempts} attempts{RESET}")
                 break
 
 
