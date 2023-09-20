@@ -114,7 +114,7 @@ def mine_block(stored_targets, prev_hash):
             for target in stored_targets:
                 if target in hashed_data[-87:]:
                 # Search for the pattern "XUNI" followed by a digit (0-9)
-                    if re.search("XUNI[0-9]", target) and is_within_five_minutes_of_hour():
+                    if re.search("XUNI[0-9]", hashed_data) and is_within_five_minutes_of_hour():
                         found_valid_hash = True
                         break
                     elif target == "XEN11":
