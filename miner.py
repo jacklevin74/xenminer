@@ -110,21 +110,21 @@ def mine_block(stored_targets, prev_hash):
             random_data = generate_random_sha256()
             hashed_data = argon2_hasher.hash(random_data + prev_hash)
 
+
             for target in stored_targets:
                 if target in hashed_data[-87:]:
-                    if target == "XUNI" and is_within_five_minutes_of_hour():
-                        found_valid_hash = True
-                        break                        
-                    elif target == "XEN11":
+                # Search for the pattern "XUNI" followed by a digit (0-9)
+                    if re.search("XUNI[0-9]", target) and is_within_five_minutes_of_hour():
                         found_valid_hash = True
                         break
-                    else:    
+                    elif target == "XEN11":
+                        found_valid_hash = True
+                        capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
+                        if capital_count >= 65:
+                            print(f"{RED}Superblock found{RESET}")
+                        break
+                    else:
                         found_valid_hash = False
-
-                    capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
-
-                    if capital_count >= 65:
-                        print(f"{RED}Superblock found{RESET}")
 
 
             pbar.update(1)
