@@ -125,6 +125,7 @@ def mine_block(stored_targets, prev_hash):
                         break
                     else:
                         found_valid_hash = False
+                        return
 
 
             pbar.update(1)

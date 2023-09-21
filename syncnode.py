@@ -118,49 +118,61 @@ row = c.fetchone()
 prev_hash = row[0] if row else 'genesis'
 print ("Found previous record in blockchain, continuing with hash: ", prev_hash)
 
+
+# Initialize a counter to keep track of how many blocks have been processed
+counter = 0
+
 # Loop through block IDs starting from the last fetched ID
 for block_id in range(last_block_id + 1, end_block_id + 1):
     url = f"http://xenminer.mooo.com:4445/getblocks/{block_id}"
-    #print ("Fetching URL: ", url)
     response = requests.get(url)
+    
     if response.status_code == 200:
         records = json.loads(response.text)
-        #print (response.text);
-        #print ("Block Size Length: ", len(records))
+        
         # Check if the number of records is less than 100
         if len(records) < 100:
             print("All sealed blocks are current")
             break
+            
         verified_hashes = []
-        #print ("Fetching block_id ", block_id);
+        
         for record in records:
             hash_to_verify = record.get("hash_to_verify")
             key = record.get("key")
             account = record.get("account")
 
             if argon2.verify(key, hash_to_verify):
-                #print ("Argon2 verified for block_id", block_id);
                 verified_hashes.append(hash_value(str(block_id) + hash_to_verify + key + account))
-
+        
         if verified_hashes:  # Only insert if there are verified hashes
             merkle_root, _ = build_merkle_tree(verified_hashes)
             records_json_blob = json.dumps(records)
-
+            
             # Generate block hash using timestamp, prev_hash, and merkle_root
             block_contents = str(prev_hash) + str(merkle_root)
             block_hash = hash_value(block_contents)
-
+            
             # Insert new block into the blockchain table
             c.execute('REPLACE INTO blockchain (id, prev_hash, merkle_root, records_json, block_hash) VALUES (?,?, ?, ?, ?)',
                       (block_id, prev_hash, merkle_root, records_json_blob, block_hash))
-            print ("Fetched block with merkleroot ", block_id, merkle_root)
-            conn.commit()
-
+            print(f"Fetched block with merkleroot {block_id}, {merkle_root}")
+            
             # Set prev_hash for the next iteration
             prev_hash = block_hash
-
-
+            
+            # Increment the counter
+            counter += 1
+            
+            # Commit every 10 blocks
+            if counter % 10 == 0:
+                conn.commit()
+                print(f"Committed {counter} blocks to the database.")
+                
+# Commit any remaining blocks that were not committed inside the loop
+conn.commit()
 conn.close()
+
 
 def verify_block_hashes():
     conn = sqlite3.connect('blockchain.db')
