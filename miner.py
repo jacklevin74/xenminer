@@ -11,7 +11,7 @@ import re
 difficulty = 1
 memory_cost = 1500 
 cores = 1
-account = "0x0A6969ffF003B760c97005e03ff5a9741126167A"
+account = "0xbcaFf7a74FD3B03bD089357B16e17Ef0e6F65996"
 
 from datetime import datetime
 def is_within_five_minutes_of_hour():
