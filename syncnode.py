@@ -192,6 +192,9 @@ def verify_block_hashes():
 
         # Verify Merkle root and Argon2 hashes
         records = json.loads(records_json)
+        if len(records) < 100: 
+            print ("Blockchain is corrupted at block {id}")
+            return False
         verified_hashes = []
         for record in records:
             hash_to_verify = record.get("hash_to_verify")
@@ -222,5 +225,5 @@ def verify_block_hashes():
     return True
 
 # Call verify_block_hashes after your existing code
-#verify_block_hashes()
+verify_block_hashes()
 validate()
