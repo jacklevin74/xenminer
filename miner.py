@@ -125,7 +125,7 @@ def mine_block(stored_targets, prev_hash):
                         break
                     else:
                         found_valid_hash = False
-                        return
+                        return 2
 
 
             pbar.update(1)
@@ -208,10 +208,13 @@ if __name__ == "__main__":
 
         if result is None:
             print(f"{RED}Restarting mining round{RESET}")
-                # Skip the increment of `i` and continue the loop
+            # Skip the increment of `i` and continue the loop
+            continue
+        elif result == 2:
+            result = None
             continue
         else:
-            i += 1  
+            i += 1
 
     random_data, new_valid_hash, attempts, hashes_per_second = result
     new_block = Block(i, blockchain[-1]['hash'], f"Block {i} Data", new_valid_hash, random_data, attempts)
