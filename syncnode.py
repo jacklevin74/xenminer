@@ -124,7 +124,10 @@ counter = 0
 
 # Loop through block IDs starting from the last fetched ID
 for block_id in range(last_block_id + 1, end_block_id + 1):
-    url = f"http://xenminer.mooo.com:4445/getblocks/{block_id}"
+#Unittest
+#for block_id in range(last_block_id + 1, 15):
+
+    url = f"http://xenminer.mooo.com:4445/getblocks/all/{block_id}"
     response = requests.get(url)
     
     if response.status_code == 200:
@@ -138,7 +141,7 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
         verified_hashes = []
         
         for record in records:
-            records_block_id = record.get('block_id')
+            records_block_id = record.get('xuni_id') if 'xuni_id' in record else record.get('block_id')
             hash_to_verify = record.get('hash_to_verify')
             key = record.get('key')
             account = record.get('account')
@@ -199,7 +202,8 @@ def verify_block_hashes():
         verified_hashes = []
         for record in records:
             hash_to_verify = record.get("hash_to_verify")
-            records_block_id = record.get('block_id')
+            #records_block_id = record.get('block_id')
+            records_block_id = record.get('xuni_id') if 'xuni_id' in record else record.get('block_id')
             key = record.get("key")
             account = record.get("account")
 
