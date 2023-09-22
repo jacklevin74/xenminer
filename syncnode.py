@@ -138,12 +138,13 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
         verified_hashes = []
         
         for record in records:
-            hash_to_verify = record.get("hash_to_verify")
-            key = record.get("key")
-            account = record.get("account")
+            records_block_id = record.get('block_id')
+            hash_to_verify = record.get('hash_to_verify')
+            key = record.get('key')
+            account = record.get('account')
 
             if argon2.verify(key, hash_to_verify):
-                verified_hashes.append(hash_value(str(block_id) + hash_to_verify + key + account))
+                verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
         
         if verified_hashes:  # Only insert if there are verified hashes
             merkle_root, _ = build_merkle_tree(verified_hashes)
@@ -225,5 +226,5 @@ def verify_block_hashes():
     return True
 
 # Call verify_block_hashes after your existing code
-verify_block_hashes()
-validate()
+#verify_block_hashes()
+#validate()
