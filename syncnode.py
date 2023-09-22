@@ -199,11 +199,12 @@ def verify_block_hashes():
         verified_hashes = []
         for record in records:
             hash_to_verify = record.get("hash_to_verify")
+            records_block_id = record.get('block_id')
             key = record.get("key")
             account = record.get("account")
 
             if argon2.verify(key, hash_to_verify):
-                verified_hashes.append(hash_value(str(id) + hash_to_verify + key + account))
+                verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
                 #print ("Key and hash_to_verify pass argon2 verification ", key, hash_to_verify)
             else:
                 print ("Key and hash_to_verify fail argon2 verification ", key, hash_to_verify)
