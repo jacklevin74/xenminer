@@ -58,7 +58,7 @@ def validate():
 
 def get_total_blocks():
     # Send a GET request to retrieve the JSON response
-    url = "http://xenminer.mooo.com/total_blocks"
+    url = "http://xenminer.mooo.com:4447/total_blocks"
     response = requests.get(url)
 
     # Check if the request was successful
@@ -66,7 +66,7 @@ def get_total_blocks():
         try:
             # Parse the JSON response
             data = json.loads(response.text)
-            total_blocks_top100 = data.get("total_blocks_top100", 0)
+            total_blocks_top100 = data.get("total_blocks", 0)
 
             # Subtract 100 and divide by 100 without remainder
             adjusted_value = (total_blocks_top100 - 100) // 100
@@ -96,8 +96,8 @@ last_block_id = row[0] if row and row[0] is not None else 0
 print ("Last fetched block ID from blockchain: ", last_block_id)
 
 # Get the total blocks from the API
-#total_blocks = get_total_blocks()
-total_blocks = 1310951
+total_blocks = get_total_blocks()
+#total_blocks = 1310951
 print ("Total blocks from mempool: ", last_block_id)
 if total_blocks is None:
     print("Failed to retrieve total_blocks.")
