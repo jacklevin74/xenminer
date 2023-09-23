@@ -127,7 +127,8 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
 #Unittest
 #for block_id in range(last_block_id + 1, 15):
 
-    url = f"http://xenminer.mooo.com:4445/getblocks/all/{block_id}"
+    #url = f"http://xenminer.mooo.com:4445/getblocks/all/{block_id}"
+    url = f"http://xenminer.mooo.com:4447/getallblocks/{block_id}"
     response = requests.get(url)
     
     if response.status_code == 200:
