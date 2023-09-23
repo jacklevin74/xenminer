@@ -96,7 +96,8 @@ last_block_id = row[0] if row and row[0] is not None else 0
 print ("Last fetched block ID from blockchain: ", last_block_id)
 
 # Get the total blocks from the API
-total_blocks = get_total_blocks()
+#total_blocks = get_total_blocks()
+total_blocks = 1310951
 print ("Total blocks from mempool: ", last_block_id)
 if total_blocks is None:
     print("Failed to retrieve total_blocks.")
