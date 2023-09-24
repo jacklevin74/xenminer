@@ -8,11 +8,31 @@ import string
 import threading
 import re
 
-difficulty = 1
-memory_cost = 1500 
-cores = 1
-account = "0x0A6969ffF003B760c97005e03ff5a9741126167A"
-last_block_url = 'http://xenminer.mooo.com:4445/getblocks/lastblock'
+import configparser
+import os
+
+# Load the configuration file
+config = configparser.ConfigParser()
+config_file_path = 'config.conf'
+
+if os.path.exists(config_file_path):
+    config.read(config_file_path)
+else:
+    raise FileNotFoundError(f"The configuration file {config_file_path} was not found.")
+
+# Ensure that the required settings are present
+required_settings = ['difficulty', 'memory_cost', 'cores', 'account', 'last_block_url']
+if not all(key in config['Settings'] for key in required_settings):
+    missing_keys = [key for key in required_settings if key not in config['Settings']]
+    raise KeyError(f"Missing required settings: {', '.join(missing_keys)}")
+
+# Access your settings
+difficulty = int(config['Settings']['difficulty'])
+memory_cost = int(config['Settings']['memory_cost'])
+cores = int(config['Settings']['cores'])
+account = config['Settings']['account']
+last_block_url = config['Settings']['last_block_url']
+
 
 def hash_value(value):
     return hashlib.sha256(value.encode()).hexdigest()
@@ -286,7 +306,7 @@ if __name__ == "__main__":
 
     genesis_block = Block(0, "0", "Genesis Block", "0", "0", "0")
     blockchain.append(genesis_block.to_dict())
-    print(f"Genesis Block: {genesis_block.hash}")
+    print(f"Mining with: {account}")
 
     i = 1
     while i <= num_blocks_to_mine:
