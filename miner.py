@@ -101,7 +101,19 @@ import time
 def submit_pow(account_address, key, hash_to_verify):
     # Download last block record
     url = last_block_url
-    response = requests.get(url)
+
+    try:
+        # Attempt to download the last block record
+        response = requests.get(url, timeout=10)  # Adding a timeout of 10 seconds
+    except requests.exceptions.RequestException as e:
+        # Handle any exceptions that occur during the request
+        print(f"An error occurred: {e}")
+        return None  # Optionally return an error value or re-raise the exception
+
+    if response.status_code != 200:
+        # Handle unexpected HTTP status codes
+        print(f"Unexpected status code {response.status_code}: {response.text}")
+        return None  # Optionally return an error value
 
     if response.status_code == 200:
         records = json.loads(response.text)
@@ -114,6 +126,10 @@ def submit_pow(account_address, key, hash_to_verify):
             account = record.get('account')
 
             # Verify each record using Argon2
+            if record_key is None or record_hash_to_verify is None:
+                print(f'Skipping record due to None value(s): record_key: {record_key}, record_hash_to_verify: {record_hash_to_verify}')
+                continue  # skip to the next record
+
             if argon2.verify(record_key, record_hash_to_verify):
                 verified_hashes.append(hash_value(str(block_id) + record_hash_to_verify + record_key + account))
 
