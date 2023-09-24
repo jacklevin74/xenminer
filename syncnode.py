@@ -136,7 +136,7 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
         records = json.loads(response.text)
         
         # Check if the number of records is less than 100
-        if len(records) < 100:
+        if len(records) < 99:
             print("All sealed blocks are current")
             break
             
@@ -171,7 +171,7 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             counter += 1
             
             # Commit every 10 blocks
-            if counter % 3 == 0:
+            if counter % 5 == 0:
                 conn.commit()
                 print(f"Committed {counter} blocks to the database.")
                 
