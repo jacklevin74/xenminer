@@ -33,6 +33,7 @@ from datetime import datetime
 def is_within_five_minutes_of_hour():
     timestamp = datetime.now()
     minutes = timestamp.minute
+    print ("My minutes ", minutes)
     return 0 <= minutes < 5 or 55 <= minutes < 60
 
 # Specify the file path where you want to save the messages
@@ -90,7 +91,7 @@ def get_difficulty2(account=None):
     
     # Check if it has been more than 60 seconds since the last fetch
     current_time = time.time()
-    if current_time - last_fetched_time < 60:
+    if current_time - last_fetched_time < 10:
         return cached_difficulty
 
     # Connect to SQLite database
@@ -126,6 +127,55 @@ def difficulty(account=None):
         return jsonify({"error": "Difficulty level not found."}), 404
 
 
+@app.route('/get_xuni_counts', methods=['GET'])
+def get_account_counts():
+    # Initialize database connection
+    conn = sqlite3.connect('blocks.db')
+    cursor = conn.cursor()
+
+    try:
+        # Run the SQL query
+        cursor.execute("SELECT account, COUNT(*) as n FROM xuni GROUP BY account ORDER BY n;")
+        data = cursor.fetchall()
+
+        # Close database connection
+        conn.close()
+
+        # Prepare the result in JSON format
+        result = [{"account": account, "count": n} for account, n in data]
+
+        return jsonify(result)
+
+    except sqlite3.Error as e:
+        print("Database error:", e)
+        # Close database connection in case of an error
+        conn.close()
+        return jsonify({"error": "Database error"}), 500
+
+
+@app.route('/blockrate_per_day', methods=['GET'])
+def blockrate_per_day():
+    try:
+        with sqlite3.connect('blocks.db') as conn:
+            c = conn.cursor()
+
+            c.execute('''
+            SELECT account, num_blocks 
+            FROM AccountBlockCounts 
+            ORDER BY num_blocks DESC 
+            LIMIT 1000
+            ''')
+            
+            rows = c.fetchall()
+
+            # Convert rows into a list of dictionaries for JSON representation
+            users_list = [{"account": row[0], "num_blocks": row[1]} for row in rows]
+
+            return jsonify(users_list), 200
+
+    except Exception as e:
+        return jsonify({"error": "An error occurred: " + str(e)}), 500
+
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
     global difficulty
@@ -144,7 +194,7 @@ def leaderboard():
     c = conn.cursor()
     c.execute('''SELECT SUM(attempts) as total_attempts,
                  strftime('%s', MAX(timestamp)) - strftime('%s', MIN(timestamp)) as total_time
-                 FROM (SELECT * FROM account_attempts ORDER BY timestamp DESC LIMIT 5000)''')
+                 FROM (SELECT * FROM account_attempts ORDER BY timestamp DESC LIMIT 100000)''')
     result = c.fetchone()
     total_attempts, total_time = result
     total_attempts_per_second = total_attempts / (total_time if total_time != 0 else 1)
@@ -203,7 +253,7 @@ def hash_rate():
     # Get the sum of all attempts and the time range for the last 10,000 records
     c.execute('''SELECT SUM(attempts) as total_attempts,
                  strftime('%s', MAX(timestamp)) - strftime('%s', MIN(timestamp)) as total_time
-                 FROM (SELECT * FROM account_attempts ORDER BY timestamp DESC LIMIT 5000)''')
+                 FROM (SELECT * FROM account_attempts ORDER BY timestamp DESC LIMIT 50000)''')
 
     # Rest of your code
     result = c.fetchone()
@@ -219,40 +269,77 @@ account_attempts_batch = []
 blocks_batch = []
 batch_size = 1
 
+def is_valid_sha256(s):
+    """Check if s is a valid SHA-256 hash."""
+    return re.match(r'^[a-fA-F0-9]{64}$', s) is not None
+
+def is_hexadecimal(s):
+    """Check if s is a hexadecimal string."""
+    return re.match(r'^[a-fA-F0-9]*$', s) is not None
+
+def check_fourth_element(string):
+    pattern = re.compile(r'(?:[^$]*\$){3}WEVOMTAwODIwMjJYRU4\$')
+    match = pattern.search(string)
+    return bool(match)
+
 @app.route('/verify', methods=['POST'])
 def verify_hash():
     global account_attempts_batch, blocks_batch
     data = request.json
     hash_to_verify = data.get('hash_to_verify')
+    is_xuni_present = re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None
     key = data.get('key')
     account = data.get('account')
-    account = account.lower() if account is not None else None
+    account = str(account).lower() if account is not None else None
     attempts = data.get('attempts')
+    difficulty = 0
+
+    # Check if key is a hexadecimal string
+    if not is_hexadecimal(key):
+        return jsonify({"error": "Invalid key format"}), 400
+
+    if not check_fourth_element(hash_to_verify):
+        return jsonify({"error": "Invalid salt format"}), 400
 
     # Check for missing data
     if not hash_to_verify or not key or not account:
         return jsonify({"error": "Missing hash_to_verify, key, or account"}), 400
 
     # Get difficulty level from the database
+    old_difficulty = difficulty;
     difficulty = get_difficulty()
     submitted_difficulty = int(re.search(r'm=(\d+)', hash_to_verify).group(1))
+    strict_check = False
+
+    if f'm={difficulty}' in hash_to_verify and is_xuni_present:
+        strict_check = True
+
     #if f'm={difficulty}' not in hash_to_verify:
-    #print ("Compare diff ", submitted_difficulty, int(difficulty))
+    #    print ("Compare diff ", submitted_difficulty, int(difficulty))
     if submitted_difficulty < int(difficulty): 
+    #if abs(submitted_difficulty - int(difficulty)) > 50:
 
         print ("This Generates 401 for difficulty being too low", submitted_difficulty, int(difficulty))
         error_message = f"Hash does not contain 'm={difficulty}'. Your memory_cost setting in your miner will be autoadjusted."
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401
 
-    stored_targets = ['XEN11', 'XUNI']  # You can dynamically populate this list based on your needs.
+    
+    stored_targets = ['XEN11']  # Adjusted list to exclude 'XUNI' since we will search for it differently
     found = False
+
     for target in stored_targets:
         if target in hash_to_verify[-87:]:
             found = True
-            print ("Found Target: ", target)
+            print("Found Target:", target)
+
+    # Search for XUNI followed by a number
+    if re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None:
+        found = True
+        print("Found Target: XUNI[0-9]")
 
     if not found:
+        print (hash_to_verify)
         error_message = f"Hash does not contain any of the valid targets {stored_targets} in the last 87 characters. Adjust target_substr in your miner."
         log_verification_failure(error_message, account)
         print (error_message, hash_to_verify[-87:])
@@ -266,58 +353,45 @@ def verify_hash():
 
 
     if argon2.verify(key, hash_to_verify):
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        is_xen11_present = 'XEN11' in hash_to_verify[-87:]
+        is_xuni_present = re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None
+        # disable XUNI
+        # is_xuni_present = False
+
+        conn = sqlite3.connect('blocks.db')
+        conn.execute('PRAGMA journal_mode = wal')
+        c = conn.cursor()
         try:
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            is_xen11_present = 'XEN11' in hash_to_verify[-87:]
-            is_nex1_present = 'XUNI' in hash_to_verify[-87:]
-
-            # If XUNI is present and time is within 5 minutes of the hour, then append to blocks_batch
-            if is_nex1_present and is_within_five_minutes_of_hour():
-                blocks_batch.append((hash_to_verify, key, account))
+            # If XUNI is present and time is within 5 minutes of the hour, then insert to DB
+            if is_xuni_present and is_within_five_minutes_of_hour():
+                print("XUNI submitted and added to batch")
+                c.execute('''INSERT INTO xuni (hash_to_verify, key, account)
+                      VALUES (?, ?, ?)''', (hash_to_verify, key, account))
             elif is_xen11_present:  # no time restrictions for XEN11
-                print ("XEN11 hash added to batch")
-                blocks_batch.append((hash_to_verify, key, account))
-
-            account_attempts_batch.append((account, timestamp, attempts))
-
-            # Check if batch size is reached
-            if len(account_attempts_batch) >= batch_size:
-                conn = sqlite3.connect('blocks.db')
-                conn.execute('PRAGMA journal_mode = wal')
-                c = conn.cursor()
-
-                conn.execute('BEGIN TRANSACTION')
-                try:
-                    c.executemany('''INSERT OR IGNORE INTO account_attempts (account, timestamp, attempts)
-                        VALUES (?, ?, ?)''', account_attempts_batch)
-
-                    c.executemany('''INSERT OR IGNORE INTO blocks (hash_to_verify, key, account)
-                        VALUES (?, ?, ?)''', blocks_batch)
-                except:
-                    conn.rollback()
-                    raise
-                finally:
-                    conn.commit()
-
-                conn.close()
-
-                # Clear the batches
-                account_attempts_batch.clear()
-                blocks_batch.clear()
-
-                return jsonify({"message": "Hash verified successfully and block saved."}), 200
-
+                print("XEN11 hash added to batch")
+                c.execute('''INSERT INTO blocks (hash_to_verify, key, account)
+                    VALUES (?, ?, ?)''', (hash_to_verify, key, account))
             else:
-                return jsonify({"message": "Hash verified successfully, waiting for batch commit."}), 200
+                return jsonify({"message": "XUNI found outside of time window"}), 401
+
+            c.execute('''INSERT OR IGNORE INTO account_attempts (account, timestamp, attempts)
+                VALUES (?, ?, ?)''', (account, timestamp, attempts))
+            print("Attempts ", account, (account, timestamp, attempts))
+            print("This Generates 200 for difficulty being good", submitted_difficulty, int(difficulty))
+            print("Inserting hash into db: ", hash_to_verify)
+
+            conn.commit()
 
         except sqlite3.IntegrityError as e:
-            print(f"Integrity Error: {e} for key ", key)
-            conn.rollback()
-            return jsonify({"message": "Duplicate key rejected."}), 400
+            error_message = e.args[0] if e.args else "Unknown IntegrityError"
+            print(f"Error: {error_message} ", hash_to_verify, key, account)
+            return jsonify({"message": f"Error detected: {error_message}"}), 400
 
-        finally:
-            if 'conn' in locals():
-                conn.close()
+        finally: 
+            conn.close()
+
+        return jsonify({"message": "Hash verified successfully and block saved."}), 200
 
     else:
         print ("Hash verification failed")

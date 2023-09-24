@@ -129,7 +129,7 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
 #for block_id in range(last_block_id + 1, 15):
 
     #url = f"http://xenminer.mooo.com:4445/getblocks/all/{block_id}"
-    url = f"http://xenminer.mooo.com:4447/getallblocks/{block_id}"
+    url = f"http://xenminer.mooo.com:4447/getallblocks2/{block_id}"
     response = requests.get(url)
     
     if response.status_code == 200:
@@ -171,7 +171,7 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             counter += 1
             
             # Commit every 10 blocks
-            if counter % 10 == 0:
+            if counter % 3 == 0:
                 conn.commit()
                 print(f"Committed {counter} blocks to the database.")
                 
