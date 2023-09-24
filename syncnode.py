@@ -136,7 +136,7 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
         records = json.loads(response.text)
         
         # Check if the number of records is less than 100
-        if len(records) < 99:
+        if len(records) < 100:
             print("All sealed blocks are current")
             break
             
