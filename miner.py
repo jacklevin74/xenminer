@@ -85,7 +85,7 @@ def fetch_difficulty_from_server():
         return str(response_data['difficulty'])
     except Exception as e:
         print(f"An error occurred while fetching difficulty: {e}")
-        return '2000'  # Default value if fetching fails
+        return memory_cost  # Return last value if fetching fails
 
 def generate_random_sha256(max_length=128):
     characters = string.ascii_letters + string.digits + string.punctuation
