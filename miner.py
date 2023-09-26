@@ -1,15 +1,6 @@
-import json
-import requests
-import time
+import json, requests, time, hashlib, string, threading, re, configparser, os
 from passlib.hash import argon2
-import hashlib
 from random import choice, randrange
-import string
-import threading
-import re
-
-import configparser
-import os
 
 # Load the configuration file
 config = configparser.ConfigParser()
@@ -211,7 +202,7 @@ def mine_block(stored_targets, prev_hash):
                     return
 
             random_data = generate_random_sha256()
-            hashed_data = argon2_hasher.hash(random_data + prev_hash)
+            hashed_data = argon2_hasher.hash(random_data)
 
 
             for target in stored_targets:
@@ -246,7 +237,7 @@ def mine_block(stored_targets, prev_hash):
     # Prepare the payload
     payload = {
         "hash_to_verify": hashed_data,
-        "key": random_data + prev_hash,
+        "key": random_data,
         "account": account,
         "attempts": attempts,
         "hashes_per_second": hashes_per_second
@@ -266,7 +257,7 @@ def mine_block(stored_targets, prev_hash):
 
         if target == "XEN11" and found_valid_hash and response.status_code == 200:
             #submit proof of work validation of last sealed block
-            submit_pow(account, random_data + prev_hash, hashed_data)
+            submit_pow(account, random_data, hashed_data)
 
         if response.status_code != 500:  # If status code is not 500, break the loop
             print("Server Response:", response.json())
@@ -285,14 +276,6 @@ def mine_block(stored_targets, prev_hash):
 
     return random_data, hashed_data, attempts, hashes_per_second
 
-def verify_block(block):
-    argon2_hasher = argon2.using(time_cost=difficulty, memory_cost=memory_cost, parallelism=cores)
-    #debug
-    print ("Key: ");
-    print (block['random_data'] + block['prev_hash'])
-    print ("Hash: ");
-    print (block['valid_hash'])
-    return argon2_hasher.verify(block['random_data'] + block['prev_hash'], block['valid_hash'])
 
 if __name__ == "__main__":
     blockchain = []
@@ -329,13 +312,3 @@ if __name__ == "__main__":
     blockchain.append(new_block.to_dict())
     print(f"New Block Added: {new_block.hash}")
 
-
-    # Verification
-    for i, block in enumerate(blockchain[1:], 1):
-        is_valid = verify_block(block)
-        print(f"Verification for Block {i}: {is_valid}")
-
-    # Write blockchain to JSON file
-    blockchain_json = json.dumps(blockchain, indent=4)
-    with open("blockchain.json", "w") as f:
-        f.write(blockchain_json)
