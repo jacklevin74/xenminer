@@ -287,10 +287,16 @@ def verify_hash():
     global account_attempts_batch, blocks_batch
     data = request.json
     hash_to_verify = data.get('hash_to_verify')
+    hash_to_verify = hash_to_verify if (hash_to_verify and len(hash_to_verify) <= 140) else None
     is_xuni_present = re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None
     key = data.get('key')
+    key = key if (key and len(key) <= 128) else None
     account = data.get('account')
-    account = str(account).lower() if account is not None else None
+
+    if account is not None:
+        account = str(account).lower().replace("'", "").replace('"', '')
+        account = account if len(account) <= 43 else None
+
     attempts = data.get('attempts')
     difficulty = 0
 

@@ -171,7 +171,7 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             counter += 1
             
             # Commit every 10 blocks
-            if counter % 5 == 0:
+            if counter % 1 == 0:
                 conn.commit()
                 print(f"Committed {counter} blocks to the database.")
                 
@@ -233,5 +233,5 @@ def verify_block_hashes():
     return True
 
 # Call verify_block_hashes after your existing code
-verify_block_hashes()
-validate()
+#verify_block_hashes()
+#validate()
