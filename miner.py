@@ -2,6 +2,16 @@ import json, requests, time, hashlib, string, threading, re, configparser, os
 from passlib.hash import argon2
 from random import choice, randrange
 
+import argparse
+import configparser
+
+# Set up argument parser
+parser = argparse.ArgumentParser(description="Process optional account argument.")
+parser.add_argument('--account', type=str, help='The account value to use.')
+
+# Parse arguments
+args = parser.parse_args()
+
 # Load the configuration file
 config = configparser.ConfigParser()
 config_file_path = 'config.conf'
@@ -11,17 +21,22 @@ if os.path.exists(config_file_path):
 else:
     raise FileNotFoundError(f"The configuration file {config_file_path} was not found.")
 
-# Ensure that the required settings are present
-required_settings = ['difficulty', 'memory_cost', 'cores', 'account', 'last_block_url']
-if not all(key in config['Settings'] for key in required_settings):
-    missing_keys = [key for key in required_settings if key not in config['Settings']]
-    raise KeyError(f"Missing required settings: {', '.join(missing_keys)}")
+# Override account from config file with command line argument if provided
+if args.account:
+    account = args.account
+else:
+    # Ensure that the required settings are present
+    required_settings = ['difficulty', 'memory_cost', 'cores', 'account', 'last_block_url']
+    if not all(key in config['Settings'] for key in required_settings):
+        missing_keys = [key for key in required_settings if key not in config['Settings']]
+        raise KeyError(f"Missing required settings: {', '.join(missing_keys)}")
 
-# Access your settings
+    account = config['Settings']['account']
+
+# Access other settings
 difficulty = int(config['Settings']['difficulty'])
 memory_cost = int(config['Settings']['memory_cost'])
 cores = int(config['Settings']['cores'])
-account = config['Settings']['account']
 last_block_url = config['Settings']['last_block_url']
 
 
