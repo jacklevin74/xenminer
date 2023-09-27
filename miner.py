@@ -5,12 +5,21 @@ from random import choice, randrange
 import argparse
 import configparser
 
-# Set up argument parser
-parser = argparse.ArgumentParser(description="Process optional account argument.")
-parser.add_argument('--account', type=str, help='The account value to use.')
 
-# Parse arguments
+# Set up argument parser
+parser = argparse.ArgumentParser(description="Process optional account and worker arguments.")
+parser.add_argument('--account', type=str, help='The account value to use.')
+parser.add_argument('--worker', type=int, help='The worker id to use.')
+
+# Parse the arguments
 args = parser.parse_args()
+
+# Access the arguments via args object
+account = args.account
+worker_id = args.worker
+
+# For example, to print the values
+print(f'Account: {account}, Worker ID: {worker_id}')
 
 # Load the configuration file
 config = configparser.ConfigParser()
@@ -255,8 +264,9 @@ def mine_block(stored_targets, prev_hash):
         "key": random_data,
         "account": account,
         "attempts": attempts,
-        "hashes_per_second": hashes_per_second
-        }
+        "hashes_per_second": hashes_per_second,
+        "worker": worker_id  # Adding worker information to the payload
+    }
 
     print (payload)
 
