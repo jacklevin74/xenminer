@@ -27,7 +27,9 @@ This project is a fork of the original [XENMiner](https://github.com/jacklevin74
 - C++ Compiler with C++11 support
 
 ## Building
-
+``` bash
+sudo apt install ocl-icd-opencl-dev
+```
 ``` bash
 git clone https://github.com/shanhaicoder/XENGPUMiner.git 
 cd XENGPUMiner
