@@ -121,6 +121,10 @@ class Block:
 
 updated_memory_cost = 1500 # just initialize it
 
+def write_difficulty_to_file(difficulty, filename='difficulty.txt'):
+    with open(filename, 'w') as file:
+        file.write(difficulty)
+
 def update_memory_cost_periodically():
     global memory_cost
     global updated_memory_cost
@@ -128,6 +132,7 @@ def update_memory_cost_periodically():
     while True:
         updated_memory_cost = fetch_difficulty_from_server()
         if updated_memory_cost != memory_cost:
+            write_difficulty_to_file(updated_memory_cost)
             print(f"Updating difficulty to {updated_memory_cost}")
         time.sleep(60)  # Fetch every 60 seconds
 
@@ -456,6 +461,14 @@ if __name__ == "__main__":
     print(f"Mining with: {account}")
     if(gpu_mode):
         print(f"Using GPU mode")
+        submit_thread = threading.Thread(target=monitor_blocks_directory)
+        submit_thread.daemon = True  # This makes the thread exit when the main program exits
+        submit_thread.start()
+        try:
+            while True:  # Loop forever
+                time.sleep(10)  # Sleep for 10 seconds
+        except KeyboardInterrupt:
+            print("Main thread is finished")
     else:
         print(f"Using CPU mode")
         i = 1
