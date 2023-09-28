@@ -20,6 +20,11 @@ if(NOT NO_CUDA)
     find_package(CUDA)
 endif()
 
+if (APPLE)
+    find_package(OpenCL REQUIRED)
+    include_directories( ${OPENCL_INCLUDE_DIR})
+endif()
+
 if(CUDA_FOUND)
     message("INFO: Using CUDA version ${CUDA_VERSION}")
     add_definitions(-DHAVE_CUDA=1)
@@ -90,9 +95,17 @@ target_include_directories(argon2-opencl PRIVATE
 gpuMiner/include/argon2-opencl
 gpuMiner/lib/argon2-opencl
 )
-target_link_libraries(argon2-opencl
-    argon2-gpu-common -lOpenCL
-)
+
+if (UNIX AND NOT APPLE)
+    target_link_libraries(argon2-opencl
+        argon2-gpu-common -lOpenCL
+    )
+endif()
+if (APPLE)
+    target_link_libraries(argon2-opencl
+        argon2-gpu-common "-framework OpenCL"
+    )
+endif()
 
 add_executable(xengpuminer
 gpuMiner/src/argon2-gpu-bench/cpuexecutive.cpp

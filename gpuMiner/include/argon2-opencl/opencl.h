@@ -21,7 +21,11 @@
 /* Some compatibility hacks: */
 #define CL_USE_DEPRECATED_OPENCL_1_1_APIS
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+#if defined(__APPLE__) || defined(__MACOSX)
+#include <OpenCL/cl.h>
+#else
 #include <CL/cl.h>
+#endif
 #undef CL_VERSION_2_0
 
 /* Throw exceptions on errors: */
