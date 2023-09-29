@@ -7,6 +7,18 @@ It supports both CUDA and OpenCL, enabling it to run on various GPU architecture
 
 This project is a fork of the original [XENMiner](https://github.com/jacklevin74/xenminer), a CPU miner developed by jacklevin74. We are thankful to jacklevin74 and all contributors to the original project for laying the groundwork.
 
+## ⚠️ Important Warning ⚠️
+
+This project involves certain build processes and, as of now, no compiled versions have been released. If you wish to use it, please be prepared mentally and be willing to explore and solve problems that may arise during the installation and usage.
+
+We encourage users to be proactive in improving the project:
+- If you encounter any issues or have solutions to existing ones, don’t hesitate to contribute to the documentation, making it more accurate and comprehensive.
+- If you manage to install and compile the entire project on a specific system, consider contributing a detailed guide outlining the full process to aid others encountering similar environments or issues.
+
+Your contributions will help in making the documentation and the project more robust and user-friendly, benefiting the entire user community and future adopters of this project. 
+
+Thank you for your understanding and cooperation!
+
 ### Enhancements:
 - **GPU Mining Support**: This version provides support for GPU mining using either CUDA or OpenCL, enabling efficient mining on various GPU architectures.
 - **Dual Mining Mode**: Users can easily switch between CPU and GPU mining based on their preferences and hardware capabilities, allowing for flexible deployment.
@@ -97,23 +109,36 @@ If you omit the `-cuda_arch` flag, the build script will default to using `sm_75
 
 ## Usage
 
-### Running the Miner.py
+It is crucial to understand that `miner.py` and `xengpuminer` must operate concurrently within the same directory. `xengpuminer` executes the local, offline mining processes through files, while `miner.py` is responsible for outputting `difficulty.txt` and continuously monitoring and verifying the blocks output to the `gpu_found_blocks_tmp` directory before uploading them. Their interdependence means they need to be run in tandem in the same directory for the entire mining operation to function correctly.
+
+### Specific Responsibilities of Each Component:
+
+1. **xengpuminer:**
+   - Performs offline, local mining.
+   - Processes data through files.
+   - Does not require network connectivity.
+
+2. **miner.py:**
+   - Outputs the `difficulty.txt` file.
+   - Continuously scans, verifies, and uploads the blocks found in the `gpu_found_blocks_tmp` directory.
+   - Requires network connectivity to upload verified blocks.
+
+### Running the Components
 
 Before running the Python miner, if you have not run the CPU version before, make sure to install the necessary Python packages by running the following command:
 ```sh
 pip install -U -r requirements.txt
 ```
 
-To run the Python miner, use:
+Ensure that both `miner.py` and `xengpuminer` are launched within the same directory. Their cooperative operation is pivotal for seamless mining and uploading of blocks.
 
 ```sh
-python miner.py
+# Running miner.py
+python miner.py --gpu=true
+
+# Running xengpuminer in a separate session or terminal, but in the same directory
+./xengpuminer -b 128
 ```
-
-Quick Tips
-
-To reattach to a screen session, use screen -r miner.
-Check your system documentation for more advanced usage of nohup and screen.
 
 ### Additional Configuration Options
 You can also specify whether to enable GPU mode by adding the --gpu parameter when running the Python miner:
@@ -121,23 +146,6 @@ You can also specify whether to enable GPU mode by adding the --gpu parameter wh
 ```sh
 python miner.py --gpu=true  # To enable GPU mode (default)
 python miner.py --gpu=false  # To disable GPU mode and run in CPU mode
-```
-### Configuration Reminder
-Before starting the miner, don't forget to configure your account address in the `config.conf` file. The default account address is set to `0x24691e54afafe2416a8252097c9ca67557271475`. Please replace it with your own account address to receive mining rewards.
-
-Here’s how the `config.conf` file will look:
-
-```ini
-account = YOUR_ACCOUNT_ADDRESS
-```
-Replace `YOUR_ACCOUNT_ADDRESS` with your actual account address.
-
-### Running the Real GPU Miner
-
-To run the XEN GPUMiner, use the following command, where `-b 128` specifies the number of hashes processed in a single batch:
-
-```sh
-./xengpuminer -b 128
 ```
 Note: The -b parameter represents the number of hashes to process in a single batch. While the maximum value for this parameter is dependent on the available GPU memory, it is recommended to choose a moderate value. As long as the total number of hashes is sufficient, a moderate batch size should suffice.
 
@@ -149,13 +157,27 @@ If you are running the miner with OpenCL, add the -m opencl parameter:
 ./xengpuminer -b 128 -m opencl
 ```
 
+#### Quick Tips
+
+To reattach to a screen session, use `screen -r miner`.
+Check your system documentation for more advanced usage of `nohup` and `screen`.
+
 To run the miner in the background, you can use nohup or screen (depending on your system and preferences):
 ```sh
 nohup ./xengpuminer -b 128 &
 ```
-Or, with screen:
+Or, with screen **recommanded**:
 ```sh
 screen -S miner
 ./xengpuminer -b 128
 # Press 'Ctrl-A' followed by 'D' to detach the screen session.
 ```
+### Configuration Reminder
+Before starting the miner, don't forget to configure your account address in the `config.conf` file. The default account address is set to `0x24691e54afafe2416a8252097c9ca67557271475`. Please replace it with your own account address to receive mining rewards.
+
+Here’s how the `config.conf` file will look:
+
+```ini
+account = YOUR_ACCOUNT_ADDRESS
+```
+Replace `YOUR_ACCOUNT_ADDRESS` with your actual account address.
