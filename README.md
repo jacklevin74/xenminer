@@ -34,13 +34,13 @@ sudo apt install ocl-icd-opencl-dev
 git clone https://github.com/shanhaicoder/XENGPUMiner.git 
 cd XENGPUMiner
 chmod +x build.sh
-./build.sh [-cuda_arch=<YOUR_CUDA_ARCH>]
+./build.sh [-cuda_arch <YOUR_CUDA_ARCH>]
 ```
 ### Specifying CUDA Architecture
 To ensure optimal performance, specify the cuda_arch value that corresponds to the Compute Capability of your Nvidia GPU. Refer to the [NVIDIA CUDA GPUs page](https://developer.nvidia.com/cuda-gpus#compute) to find the suitable value for your GPU model.
 
 ```
-./build.sh -cuda_arch=sm_52  # Example for a GPU with Compute Capability 5.2
+./build.sh -cuda_arch sm_52  # Example for a GPU with Compute Capability 5.2
 ```
 If you do not specify the cuda_arch, the script will use a default value sm_75.
 
