@@ -12,7 +12,6 @@ BenchmarkExecutive::~BenchmarkExecutive() { }
 #include <iomanip>
 #include <chrono>
 #include <thread>
-long long int hashtotal = 0;
 int BenchmarkDirector::runBenchmark(Argon2Runner &runner) const
 {
     using namespace std;
@@ -22,6 +21,7 @@ int BenchmarkDirector::runBenchmark(Argon2Runner &runner) const
     const std::string unit = "Hashes";
     DummyPasswordGenerator pwGen;
     RunTimeStats stats(batchSize);
+    long long int hashtotal = 0;
     for (std::size_t i = 0; i < samples; i++) {
         // break when mcost changed
         {
