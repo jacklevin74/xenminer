@@ -7,7 +7,7 @@ It supports both CUDA and OpenCL, enabling it to run on various GPU architecture
 
 This project is a fork of the original [XENMiner](https://github.com/jacklevin74/xenminer), a CPU miner developed by jacklevin74. We are thankful to jacklevin74 and all contributors to the original project for laying the groundwork.
 
-## ⚠️ Important Warning ⚠️
+## Important Warning
 
 This project involves certain build processes and, as of now, no compiled versions have been released. If you wish to use it, please be prepared mentally and be willing to explore and solve problems that may arise during the installation and usage.
 
@@ -31,7 +31,7 @@ Thank you for your understanding and cooperation!
 - User-friendly Command-Line Interface (CLI)
 - Easy to configure and use
 
-## Features Yet to be Implemented
+### Features Yet to be Implemented
 
 The following are features and enhancements that are planned to be incorporated in future versions of this project:
 
@@ -45,6 +45,24 @@ The following are features and enhancements that are planned to be incorporated 
 - OpenCL (if using OpenCL)
 - CMake (>= 3.7)
 - C++ Compiler with C++11 support
+
+## Quick Start
+
+If you're familiar with using a terminal, the following commands can help you get started quickly. 
+
+```sh
+apt update && apt upgrade -y  # Update system packages
+apt install git cmake make sudo -y  # Install necessary packages for building
+git clone https://github.com/shanhaicoder/XENGPUMiner.git  # Clone the repository
+cd XENGPUMiner  # Navigate to the project directory
+chmod +x build.sh  # Make the build script executable
+sudo apt install ocl-icd-opencl-dev  # Install OpenCL development package
+./build.sh  # Run the build script
+pip install -U -r requirements.txt  # Install the required Python packages
+screen -S "gpuminer" -dm bash -c "python miner.py --gpu=true"  # Start the Python miner in a new screen session
+screen -S "gpuminer" -X screen bash -c "./xengpuminer -b 128"  # Start the GPU miner in the same screen session
+```
+Please note that this Quick Start assumes you are on a Debian-based system (like Ubuntu) and have some knowledge of Linux command line, and it is only intended to serve as a basic guide to get the software running quickly. For more detailed information on building and configuring the miner, refer to the relevant sections of this document.
 
 ## Building
 
@@ -70,7 +88,6 @@ git clone https://github.com/shanhaicoder/XENGPUMiner.git
 cd XENGPUMiner
 chmod +x build.sh
 ```
-
 
 ### OpenCL Installation
 To enable OpenCL support, you need to install the OpenCL development package. On Debian-based systems like Ubuntu, you can run the following command:
