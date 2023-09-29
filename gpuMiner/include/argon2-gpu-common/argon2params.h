@@ -3,6 +3,10 @@
 
 #include <cstdint>
 
+#if defined(__APPLE__) || defined(__MACOSX)
+    #include <cstddef>
+#endif
+
 #include "argon2-common.h"
 
 namespace argon2 {

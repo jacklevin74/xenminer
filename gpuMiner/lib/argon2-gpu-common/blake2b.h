@@ -3,6 +3,10 @@
 
 #include <cstdint>
 
+#if defined(__APPLE__) || defined(__MACOSX)
+    #include <cstddef>
+#endif
+
 namespace argon2 {
 
 class Blake2b
