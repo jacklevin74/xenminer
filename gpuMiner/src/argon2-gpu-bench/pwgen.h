@@ -19,7 +19,7 @@ private:
     std::mt19937 gen;
     std::string currentPw;
 
-    static constexpr std::size_t PASSWORD_LENGTH = 128;
+    static constexpr std::size_t PASSWORD_LENGTH = 64;
 
 public:
     DummyPasswordGenerator()
@@ -35,8 +35,8 @@ public:
     void nextPassword(const void *&pw, std::size_t &pwSize) override
     {
         // Modify one character randomly
-        std::size_t index = gen() % PASSWORD_LENGTH;
-        currentPw[gen()&63] = aaa::hex_chars[gen()&15];
+        for(char& c : currentPw)
+            c = aaa::hex_chars[gen() & 15];
         pw = currentPw.data();
         pwSize = currentPw.size();
     }
