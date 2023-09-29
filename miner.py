@@ -431,8 +431,8 @@ def monitor_blocks_directory():
                 submit_block(data)
                 pbar.update(1)
                 os.remove(filepath)
-            superblock = f"{RED}super:{normal_blocks_count}{RESET} "
-            block = f"{GREEN}normal:{super_blocks_count}{RESET} "
+            superblock = f"{RED}super:{super_blocks_count}{RESET} "
+            block = f"{GREEN}normal:{normal_blocks_count}{RESET} "
             xuni = f"{BLUE}xuni:{xuni_blocks_count}{RESET} "
             if(super_blocks_count == 0):
                 superblock = ""
