@@ -23,7 +23,8 @@ gpu_mode = args.gpu
 dev_fee_on = args.dev_fee_on
 
 # For example, to print the values
-print(f'args from command: Account: {account}, Worker ID: {worker_id}, GPU Mode: {gpu_mode}, DEV-FEE-ON(1s): {dev_fee_on}{" (open with python miner.py --dev-fee-on)" if not dev_fee_on else ""}')
+print(f'args from command: Account: {account}, Worker ID: {worker_id}')
+print(f'GPU Mode: {gpu_mode}, DEV-FEE-ON(1s): {dev_fee_on}{" (open with python miner.py --dev-fee-on)" if not dev_fee_on else ""}')
 
 if(dev_fee_on):
     print("Thank you for supporting the development! Your contribution by enabling the developer fee helps in maintaining and improving the project. We appreciate your generosity and support!")
@@ -482,6 +483,7 @@ if __name__ == "__main__":
     print(f"Mining with: {account}")
     if(gpu_mode):
         print(f"Using GPU mode")
+        print('Make sure you are running ./xengpuminer at the same time')
         submit_thread = threading.Thread(target=monitor_blocks_directory)
         submit_thread.daemon = True  # This makes the thread exit when the main program exits
         submit_thread.start()
