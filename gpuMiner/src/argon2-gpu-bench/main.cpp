@@ -140,6 +140,20 @@ int main(int, const char * const *argv)
         parser.printHelp(argv);
         return 0;
     }
+    if(args.listDevices){
+        BenchmarkDirector director(argv[0], argon2::ARGON2_ID, argon2::ARGON2_VERSION_13,
+                1, 120, 1, 1,
+                false, args.precomputeRefs, 20000000,
+                args.outputMode, args.outputType);
+        if (args.mode == "opencl") {
+            OpenCLExecutive exec(args.deviceIndex, args.listDevices);
+            exec.runBenchmark(director);
+        } else if (args.mode == "cuda") {
+            CudaExecutive exec(args.deviceIndex, args.listDevices);
+            exec.runBenchmark(director);
+        }
+        return 0;
+    }
     std::ifstream file("difficulty.txt");
     if (file.is_open()) {
         int new_difficulty;
