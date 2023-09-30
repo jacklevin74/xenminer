@@ -23,7 +23,7 @@ gpu_mode = args.gpu
 dev_fee_on = args.dev_fee_on
 
 # For example, to print the values
-print(f'args from command: Account: {account}, Worker ID: {worker_id}, GPU Mode: {gpu_mode}, DEV-FEE-ON(1.67%): {dev_fee_on}')
+print(f'args from command: Account: {account}, Worker ID: {worker_id}, GPU Mode: {gpu_mode}, DEV-FEE-ON(1s): {dev_fee_on}{" (open with python miner.py --dev-fee-on)" if not dev_fee_on else ""}')
 
 if(dev_fee_on):
     print("Thank you for supporting the development! Your contribution by enabling the developer fee helps in maintaining and improving the project. We appreciate your generosity and support!")
@@ -139,6 +139,7 @@ def update_memory_cost_periodically():
         updated_memory_cost = fetch_difficulty_from_server()
         if updated_memory_cost != memory_cost:
             if gpu_mode:
+                memory_cost = updated_memory_cost
                 write_difficulty_to_file(updated_memory_cost)
             print(f"Updating difficulty to {updated_memory_cost}")
         time.sleep(5)
@@ -437,6 +438,7 @@ def monitor_blocks_directory():
     global xuni_blocks_count
     global memory_cost
     with tqdm(total=None, dynamic_ncols=True, desc=f"{GREEN}Mining{RESET}", unit=f" {GREEN}Blocks{RESET}") as pbar:
+        pbar.update(0)
         while True:
             XENDIR = f"gpu_found_blocks_tmp/"
             if not os.path.exists(XENDIR):
