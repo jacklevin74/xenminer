@@ -186,14 +186,14 @@ int main(int, const char * const *argv)
 
                 cl_ulong memorySize;
                 clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &memorySize, NULL);
-                batchSize = memorySize / 1.6 / mcost / 1024;
+                batchSize = memorySize / mcost / 1.01 / 1024;
             } else if (args.mode == "cuda") {
                 #if HAVE_CUDA
                     cudaSetDevice(args.deviceIndex); // Set device by index
                     size_t freeMemory, totalMemory;
                     cudaMemGetInfo(&freeMemory, &totalMemory);
 
-                    batchSize = freeMemory / 1.1 / mcost / 1024;
+                    batchSize = freeMemory / 1.01 / mcost / 1024;
                 #endif
 
             }
