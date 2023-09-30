@@ -41,6 +41,10 @@ By using the --no-dev-fee option, all mining rewards will be directed to your ac
 Community Engagement
 We are grateful for the community's support and engagement, and we are always open to feedback, suggestions, and discussions. We believe in mutual growth and are excited to build a better mining future together.
 
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](License) file for details.
+
 ## Features
 
 - Supports CUDA and OpenCL
