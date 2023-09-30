@@ -24,22 +24,21 @@ Your contributions will help in making the documentation and the project more ro
 Thank you for your understanding and cooperation!
 
 ## Developer Fee and Continuous Improvement
-
-We understand the value of community support and user satisfaction, and we are committed to minimizing any inconvenience. The miner has a nominal 1.67% developer fee (equivalent to the mining rewards earned in the first minute of every hour) to support the ongoing development, maintenance, and improvement of the project.
+We highly value community support and user satisfaction, and we strive to minimize any inconvenience for our users. To sustain the ongoing development, maintenance, and enhancements of the project, the miner operates with a nominal 1.67% developer fee. This fee is equivalent to the mining rewards earned in the first minute of every hour and is crucial for the continuous improvement of the project.
 
 ### Commitment to Excellence
-The funds collected through the developer fee are reinvested into the project to enhance the efficiency of the miner, implement new features, and provide regular updates to address any potential bugs or issues. We are dedicated to delivering a high-quality mining experience and continually optimizing the software to maximize your mining rewards.
+The developer fee serves as a reinvestment into the project, allowing us to enhance the efficiency of the miner, implement innovative features, and release regular updates to address any potential bugs or issues. We are devoted to delivering an exceptional mining experience and relentlessly work on optimizing the software to ensure you reap maximum mining rewards.
 
-### Option to Disable
-We value user choice and transparency. If you prefer not to contribute the developer fee, you have the option to disable it when running the miner:
+### Option to Contribute and Adapt
+Understanding the importance of user choice and transparency, we provide the flexibility to adjust or disable the developer fee. If you decide to contribute a different amount or opt out of the developer fee, you can easily do so when running the miner:
 
 ```sh
-python miner.py --no-dev-fee
+$ python miner.py --dev-fee-on --dev-fee-seconds [Your Chosen Seconds]
 ```
-By using the --no-dev-fee option, all mining rewards will be directed to your account, and none will be contributed to the developer. We appreciate your understanding and support, whether you choose to contribute the fee or not, and we are here to assist you with any concerns or questions you may have.
+By using the `--dev-fee-on` option, you can enable the developer fee, and with `--dev-fee-seconds`, you can specify the number of seconds per hour you wish to contribute, This may not be necessary, the default is 60. If you choose not to use these options, all mining rewards will be directed to your account, with no contributions to the developer. We respect and appreciate your decisions and are always here to assist you with any concerns or questions you may have.
 
-Community Engagement
-We are grateful for the community's support and engagement, and we are always open to feedback, suggestions, and discussions. We believe in mutual growth and are excited to build a better mining future together.
+### Community Engagement
+Our gratitude extends to the entire community for its unwavering support and active engagement. We encourage and welcome feedback, suggestions, and vibrant discussions as we believe in mutual growth and the shared vision of shaping a prosperous mining future together.
 
 ## License
 
