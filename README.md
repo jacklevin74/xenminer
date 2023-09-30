@@ -49,6 +49,7 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - Supports CUDA and OpenCL
 - Efficient hashing computation
 - Compatible with various GPU architectures
+- Supports multiple GPUs
 - User-friendly Command-Line Interface (CLI)
 - Easy to configure and use
 
@@ -196,6 +197,34 @@ $ ./xengpuminer -m opencl
 ```
 The -b parameter is not mandatory. If omitted, the system will automatically adjust the batch size for optimum resource utilization.
 Note: If opencl is used, two-thirds of the total gpu memory will be used for computing
+
+## Listing Available Devices
+
+To view a list of all available devices that XENGPUMiner can use, you can use the `-l` argument:
+
+```bash
+./xengpuminer -l
+```
+This command will display a list of all the GPUs available on your system, along with their indices, which you can use with the `-d <GPU_INDEX>` argument to select a specific GPU for mining.
+
+
+### Running with Specific GPU
+
+XENGPUMiner supports multiple GPUs, and you can specify which GPU to use by providing the `-d` argument followed by the index of the GPU.
+
+```bash
+./xengpuminer -d <GPU_INDEX>
+```
+Where <GPU_INDEX> is the index of the GPU you want to use. For example, to use the first GPU, you can run:
+```bash
+./xengpuminer -d 0
+```
+To use the second GPU, you can run:
+```bash
+./xengpuminer -d 1
+```
+Running with Multiple GPUs
+To run XENGPUMiner with multiple GPUs, you can start separate instances of the program, each specifying a different GPU index with the `-d` argument. Ensure each instance is run in a separate session or terminal window.
 
 #### Quick Tips
 
