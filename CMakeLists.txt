@@ -124,16 +124,17 @@ endif()
 add_executable(xengpuminer
 gpuMiner/src/argon2-gpu-bench/cpuexecutive.cpp
 gpuMiner/src/argon2-gpu-bench/cudaexecutive.cpp
+gpuMiner/src/argon2-gpu-bench/openclexecutive.cpp
 gpuMiner/src/argon2-gpu-bench/benchmark.cpp
 gpuMiner/src/argon2-gpu-bench/main.cpp
 )
 target_include_directories(xengpuminer PRIVATE gpuMiner/src/argon2-gpu-bench)
 target_link_libraries(xengpuminer
-    argon2-cuda argon2
+    argon2-cuda argon2-opencl argon2 -lOpenCL
 )
 
 install(
-    TARGETS argon2-gpu-common argon2-cuda
+    TARGETS argon2-gpu-common argon2-opencl argon2-cuda
     DESTINATION ${LIBRARY_INSTALL_DIR}
 )
 install(FILES

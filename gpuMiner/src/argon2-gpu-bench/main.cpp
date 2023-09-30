@@ -162,10 +162,14 @@ int main(int, const char * const *argv)
                 1, mcost, 1, args.batchSize,
                 false, args.precomputeRefs, 20000000,
                 args.outputMode, args.outputType);
-        CudaExecutive exec(args.deviceIndex, args.listDevices);
-        exec.runBenchmark(director);
+        if (args.mode == "opencl") {
+            OpenCLExecutive exec(args.deviceIndex, args.listDevices);
+            return exec.runBenchmark(director);
+        } else if (args.mode == "cuda") {
+            CudaExecutive exec(args.deviceIndex, args.listDevices);
+            return exec.runBenchmark(director);
+        }
     }
-
     return 0;
 }
 

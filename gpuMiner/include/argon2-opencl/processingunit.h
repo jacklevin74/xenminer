@@ -14,6 +14,7 @@ private:
     const ProgramContext *programContext;
     const Argon2Params *params;
     const Device *device;
+    std::vector<std::string> passwordStorage;
 
     KernelRunner runner;
     std::uint32_t bestLanesPerBlock;
@@ -33,6 +34,7 @@ public:
     /* You can safely call this function after the beginProcessing() call to
      * process the previous batch: */
     void getHash(std::size_t index, void *hash);
+    std::string getPW(std::size_t index);
 
     void beginProcessing();
     void endProcessing();

@@ -114,12 +114,26 @@ void ProcessingUnit::setPassword(std::size_t index, const void *pw,
     params->fillFirstBlocks(memory, pw, pwSize,
                             programContext->getArgon2Type(),
                             programContext->getArgon2Version());
+                                // Expand the storage if needed
+    if (passwordStorage.size() <= index) {
+        passwordStorage.resize(index + 1);
+    }
+    
+    // Store the password at the specified index
+    passwordStorage[index] = std::string(static_cast<const char*>(pw), pwSize);
 }
 
 void ProcessingUnit::getHash(std::size_t index, void *hash)
 {
     const void *memory = runner.getOutputMemory(index);
     params->finalize(hash, memory);
+}
+std::string ProcessingUnit::getPW(std::size_t index){
+    if (index < passwordStorage.size()) {
+        return passwordStorage[index];
+    }
+    return {};  // Return an empty string if the index is out of bounds
+
 }
 
 void ProcessingUnit::beginProcessing()

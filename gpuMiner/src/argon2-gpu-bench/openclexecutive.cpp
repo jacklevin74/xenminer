@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-static constexpr std::size_t HASH_LENGTH = 32;
+static constexpr std::size_t HASH_LENGTH = 64;
 
 class OpenCLRunner : public Argon2Runner
 {
@@ -16,9 +16,8 @@ public:
     OpenCLRunner(const BenchmarkDirector &director,
                  const argon2::opencl::Device &device,
                  const argon2::opencl::ProgramContext &pc)
-        : params(HASH_LENGTH, NULL, 0, NULL, 0, NULL, 0,
-                 director.getTimeCost(), director.getMemoryCost(),
-                 director.getLanes()),
+        : params(HASH_LENGTH, "XEN10082022XEN", 14, NULL, 0, NULL, 0,
+                 1, director.getMemoryCost(), 1),
           unit(&pc, &params, &device, director.getBatchSize(),
                director.isBySegment(), director.isPrecomputeRefs())
     {
@@ -27,6 +26,105 @@ public:
     nanosecs runBenchmark(const BenchmarkDirector &director,
                           PasswordGenerator &pwGen) override;
 };
+#include <string>
+
+static const std::string base64_chars1 = 
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789+/";
+
+std::string base64_encode1(unsigned char const* bytes_to_encode, unsigned int in_len) {
+    std::string ret;
+    int i = 0;
+    int j = 0;
+    unsigned char char_array_3[3];
+    unsigned char char_array_4[4];
+
+    while (in_len--) {
+        char_array_3[i++] = *(bytes_to_encode++);
+        if (i == 3) {
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
+
+            for(i = 0; (i <4) ; i++)
+                ret += base64_chars1[char_array_4[i]];
+            i = 0;
+        }
+    }
+
+    if (i) {
+        for(j = i; j < 3; j++)
+            char_array_3[j] = '\0';
+
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+        char_array_4[3] = char_array_3[2] & 0x3f;
+
+        for (j = 0; (j < i + 1); j++)
+            ret += base64_chars1[char_array_4[j]];
+    }
+
+    return ret;
+}
+#include <iostream>
+#include <fstream>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+#include <sys/stat.h>
+#include <cstring>
+static int file_counter = 0; 
+static bool create_directory1(const std::string& path) {
+    size_t pos = 0;
+    do {
+        pos = path.find_first_of('/', pos + 1);
+        std::string subdir = path.substr(0, pos);
+        if (mkdir(subdir.c_str(), 0755) && errno != EEXIST) {
+            std::cerr << "Error creating directory " << subdir << ": " << strerror(errno) << std::endl;
+            return false;
+        }
+    } while (pos != std::string::npos);
+    return true;
+}
+static void saveToFile1(const std::string& pw) {
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    std::tm now_tm = *std::localtime(&now_time);
+
+    std::ostringstream dirStream;
+    dirStream << "gpu_found_blocks_tmp/";
+    std::string dirStr = dirStream.str();
+
+    if (!create_directory1(dirStr)) {
+        return;
+    }
+
+    std::ostringstream filename;
+    filename << dirStr << "/" << std::put_time(&now_tm, "%m-%d_%H-%M-%S") << "_" << file_counter++ << ".txt";
+    std::ofstream outFile(filename.str(), std::ios::app);
+    if(!outFile) {
+        std::cerr << "Error opening file " << filename.str() << std::endl;
+        return;
+    }
+    outFile << pw;
+    outFile.close();
+}
+
+#include <regex>
+#include <iostream>
+#include <chrono>
+#include <ctime>
+
+bool is_within_five_minutes_of_hour1() {
+    auto now = std::chrono::system_clock::now();
+    std::time_t time_now = std::chrono::system_clock::to_time_t(now);
+    tm *timeinfo = std::localtime(&time_now);
+    int minutes = timeinfo->tm_min;
+    return 0 <= minutes && minutes < 5 || 55 <= minutes && minutes < 60;
+}
 
 nanosecs OpenCLRunner::runBenchmark(const BenchmarkDirector &director,
                                     PasswordGenerator &pwGen)
@@ -53,34 +151,39 @@ nanosecs OpenCLRunner::runBenchmark(const BenchmarkDirector &director,
 
     unit.beginProcessing();
     unit.endProcessing();
-
+    int mcost = director.getMemoryCost();
     clock_type::time_point checkpt2 = clock_type::now();
+    std::regex pattern(R"(XUNI\d)");
+
     for (std::size_t i = 0; i < batchSize; i++) {
         uint8_t buffer[HASH_LENGTH];
         unit.getHash(i, buffer);
+        std::string decodedString = base64_encode1(buffer, HASH_LENGTH);
+        // std::cout << "Hash " << unit.getPW(i) << " (Base64): " << decodedString << std::endl;
+
+        if (decodedString.find("XEN11") != std::string::npos) {
+            std::string pw = unit.getPW(i);
+            std::cout << "XEN11 found Hash " << decodedString << std::endl;
+            saveToFile1(pw);
+        } 
+        if(std::regex_search(decodedString, pattern) && is_within_five_minutes_of_hour1()){
+            std::string pw = unit.getPW(i);
+            std::cout << "XUNI found Hash " << decodedString << std::endl;
+            saveToFile1(pw);
+        }
+        else {
+        }
     }
     clock_type::time_point checkpt3 = clock_type::now();
 
-    if (beVerbose) {
-        clock_type::duration wrTime = checkpt1 - checkpt0;
-        auto wrTimeNs = toNanoseconds(wrTime);
-        std::cout << "    Writing took     "
-                  << RunTimeStats::repr(wrTimeNs) << std::endl;
-    }
 
-    clock_type::duration compTime = checkpt2 - checkpt1;
+    clock_type::duration compTime = checkpt3 - checkpt1;
     auto compTimeNs = toNanoseconds(compTime);
-    if (beVerbose) {
-        std::cout << "    Computation took "
-                  << RunTimeStats::repr(compTimeNs) << std::endl;
-    }
+    // if (beVerbose) {
+    //     std::cout << "    Computation took "
+    //               << RunTimeStats::repr(compTimeNs) << std::endl;
+    // }
 
-    if (beVerbose) {
-        clock_type::duration rdTime = checkpt3 - checkpt2;
-        auto rdTimeNs = toNanoseconds(rdTime);
-        std::cout << "    Reading took     "
-                  << RunTimeStats::repr(rdTimeNs) << std::endl;
-    }
     return compTimeNs;
 }
 
