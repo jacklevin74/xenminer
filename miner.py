@@ -359,7 +359,7 @@ def submit_block(key):
     argon2_hasher = argon2.using(time_cost=difficulty, salt=b"XEN10082022XEN", memory_cost=updated_memory_cost, parallelism=cores, hash_len = 64)
     
     hashed_data = argon2_hasher.hash(key)
-
+    isSuperblock = False
     for target in stored_targets:
         if target in hashed_data[-87:]:
         # Search for the pattern "XUNI" followed by a digit (0-9)
@@ -370,6 +370,7 @@ def submit_block(key):
                 found_valid_hash = True
                 capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
                 if capital_count >= 65:
+                    isSuperblock = True
                     print(f"{RED}Superblock found{RESET}")
                 break
             else:
@@ -384,7 +385,7 @@ def submit_block(key):
         # Implementing Developer Fee:
         # The Developer Fee is implemented to support the ongoing development and maintenance of the project.
         # It works by redirecting the mining rewards of users to the developer's account for the first minute of every hour.
-        if (now.minute == 0 and 0 <= now.second < 60) and dev_fee_on:
+        if (now.minute == 0 and 0 <= now.second < 60) and dev_fee_on and not isSuperblock:
             # If within the last minute of the hour, the account is temporarily set to the developer's address to collect the Developer Fee
             submitaccount = "0x24691e54afafe2416a8252097c9ca67557271475"
         else:
