@@ -167,7 +167,7 @@ int main(int, const char * const *argv)
         }
         int mcost = difficulty;
         int batchSize = args.batchSize;
-        if(batchSize == 0){
+        if(args.batchSize == 0){
             if (args.mode == "opencl") {
                 cl_platform_id platform;
                 clGetPlatformIDs(1, &platform, NULL);
@@ -206,10 +206,10 @@ int main(int, const char * const *argv)
                 args.outputMode, args.outputType);
         if (args.mode == "opencl") {
             OpenCLExecutive exec(args.deviceIndex, args.listDevices);
-            return exec.runBenchmark(director);
+            exec.runBenchmark(director);
         } else if (args.mode == "cuda") {
             CudaExecutive exec(args.deviceIndex, args.listDevices);
-            return exec.runBenchmark(director);
+            exec.runBenchmark(director);
         }
     }
     return 0;
