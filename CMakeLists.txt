@@ -36,12 +36,6 @@ else()
     add_definitions(-DHAVE_CUDA=0)
 endif()
 
-find_package(OpenCL REQUIRED)
-include_directories( ${OPENCL_INCLUDE_DIR})
-if(NOT OpenCL_FOUND)
-    message(FATAL_ERROR "OpenCL not found!")
-endif()
-
 if(CUDA_FOUND)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};
         -std=c++11;-O3;--ptxas-options=-v;-arch ${CUDA_ARCH};-lineinfo
