@@ -134,14 +134,14 @@ def update_memory_cost_periodically():
     global memory_cost
     global updated_memory_cost
     global gpu_mode
-    time.sleep(10)  # start checking in 10 seconds after launch 
+    time.sleep(2)
     while True:
         updated_memory_cost = fetch_difficulty_from_server()
         if updated_memory_cost != memory_cost:
             if gpu_mode:
                 write_difficulty_to_file(updated_memory_cost)
             print(f"Updating difficulty to {updated_memory_cost}")
-        time.sleep(60)  # Fetch every 60 seconds
+        time.sleep(5)
 
 # Function to get difficulty level from the server
 def fetch_difficulty_from_server():
@@ -321,7 +321,7 @@ def mine_block(stored_targets, prev_hash):
         
         retries += 1
         print(f"Retrying... ({retries}/{max_retries})")
-        time.sleep(10)  # You can adjust the sleep time
+        time.sleep(5)  # You can adjust the sleep time
 
 
         # Print the server's response
@@ -420,7 +420,7 @@ def submit_block(key):
             
             retries += 1
             print(f"Retrying... ({retries}/{max_retries})")
-            time.sleep(10)  # You can adjust the sleep time
+            time.sleep(5)  # You can adjust the sleep time
 
 
             # Print the server's response
@@ -462,7 +462,7 @@ def monitor_blocks_directory():
             else:
                 pbar.set_postfix({"Details": f"{superblock}{block}{xuni}"}, refresh=True)
 
-            time.sleep(0.8)  # Check every 1 seconds
+            time.sleep(1)  # Check every 1 seconds
 
 
 if __name__ == "__main__":
