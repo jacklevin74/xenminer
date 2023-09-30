@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description="Process optional account and worke
 parser.add_argument('--account', type=str, help='The account value to use.')
 parser.add_argument('--worker', type=int, help='The worker id to use.')
 parser.add_argument('--gpu', type=str, help='Set to true to enable GPU mode, and to false to disable it.')
-parser.add_argument('--dev-fee-on', action='store_true', help='Disable the developer fee')
+parser.add_argument('--dev-fee-on', action='store_true', default=None, help='Enable the developer fee')
 
 # Parse the arguments
 args = parser.parse_args()
@@ -25,9 +25,6 @@ dev_fee_on = args.dev_fee_on
 # For example, to print the values
 print(f'args from command: Account: {account}, Worker ID: {worker_id}')
 print(f'GPU Mode: {gpu_mode}, DEV-FEE-ON(1s): {dev_fee_on}{" (open with python miner.py --dev-fee-on)" if not dev_fee_on else ""}')
-
-if(dev_fee_on):
-    print("Thank you for supporting the development! Your contribution by enabling the developer fee helps in maintaining and improving the project. We appreciate your generosity and support!")
 
 # Load the configuration file
 config = configparser.ConfigParser()
@@ -66,6 +63,20 @@ else:
             gpu_mode = True
         else:
             gpu_mode = False
+
+
+if(not dev_fee_on):
+    if 'dev_fee_on' not in config['Settings']:
+        missing_keys = [key for key in required_settings if key not in config['Settings']]
+        print(f"Missing dev_fee_on settings, defaulting to False")
+        dev_fee_on = False
+    else:
+        if config['Settings']['dev_fee_on'].lower() == 'false':
+            dev_fee_on = False
+        else:
+            dev_fee_on = True
+if dev_fee_on:
+    print("Thank you for supporting the development! Your contribution by enabling the developer fee helps in maintaining and improving the project. We appreciate your generosity and support!")
 
 # Access other settings
 difficulty = int(config['Settings']['difficulty'])
