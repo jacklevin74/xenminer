@@ -363,7 +363,7 @@ def submit_block(key):
     if found_valid_hash:
         print(f"\n{RED}Found valid hash for target {target}{RESET}")
 
-        now = datetime.datetime.now()  # Get the current time
+        now = datetime.now()  # Get the current time
 
         # Implementing Developer Fee:
         # The Developer Fee is implemented to support the ongoing development and maintenance of the project.
