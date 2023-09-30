@@ -172,28 +172,30 @@ Ensure that both `miner.py` and `xengpuminer` are launched within the same direc
 
 ```sh
 # Running miner.py
-python miner.py --gpu=true
+$ python miner.py --gpu=true
 
 # Running xengpuminer in a separate session or terminal, but in the same directory
-./xengpuminer -b 128
+$ ./xengpuminer
 ```
 
 ### Additional Configuration Options
 You can also specify whether to enable GPU mode by adding the --gpu parameter when running the Python miner:
 
 ```sh
-python miner.py --gpu=true  # To enable GPU mode (default)
-python miner.py --gpu=false  # To disable GPU mode and run in CPU mode
+$ python miner.py --gpu=true  # To enable GPU mode (default)
+$ python miner.py --gpu=false  # To disable GPU mode and run in CPU mode
 ```
-Note: The -b parameter represents the number of hashes to process in a single batch. While the maximum value for this parameter is dependent on the available GPU memory, it is recommended to choose a moderate value. As long as the total number of hashes is sufficient, a moderate batch size should suffice.
+Note: The -b parameter represents the number of hashes to process in a single batch. While the maximum value for this parameter is dependent on the available GPU memory, a moderate value is recommended. As long as the total number of hashes is sufficient, a moderate batch size should suffice.
 
-Normally, we need about `difficulty * [-b para] * 1024 Bytes` gpu memory
+Typically, about difficulty * [-b para] * 1024 Bytes of GPU memory is needed.
 
 If you are running the miner with OpenCL, add the -m opencl parameter:
 
 ```sh
-./xengpuminer -b 128 -m opencl
+$ ./xengpuminer -m opencl
 ```
+The -b parameter is not mandatory. If omitted, the system will automatically adjust the batch size for optimum resource utilization.
+Note: If opencl is used, two-thirds of the total gpu memory will be used for computing
 
 #### Quick Tips
 
@@ -202,12 +204,12 @@ Check your system documentation for more advanced usage of `nohup` and `screen`.
 
 To run the miner in the background, you can use nohup or screen (depending on your system and preferences):
 ```sh
-nohup ./xengpuminer -b 128 &
+nohup ./xengpuminer &
 ```
 Or, with screen **recommanded**:
 ```sh
 screen -S miner
-./xengpuminer -b 128
+./xengpuminer
 # Press 'Ctrl-A' followed by 'D' to detach the screen session.
 ```
 ### Configuration Reminder
