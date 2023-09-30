@@ -3,13 +3,19 @@
 
 #include <cstdint>
 
-#if defined(__APPLE__) || defined(__MACOSX)
+#if defined(__APPLE__) || defined(__MACOSX) || defined(_WIN32)
     #include <cstddef>
+#endif
+
+#ifdef _WIN32
+#  define EXPORT_SYMBOL1 __declspec(dllexport)
+#else
+#  define EXPORT_SYMBOL1
 #endif
 
 namespace argon2 {
 
-class Blake2b
+class EXPORT_SYMBOL1 Blake2b
 {
 public:
     enum {

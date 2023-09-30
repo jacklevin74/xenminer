@@ -19,100 +19,100 @@
 #define BENCH_OUTLEN 16
 #define BENCH_INLEN 16
 
-static double min(const double *samples, size_t count)
-{
-    size_t i;
-    double min = INFINITY;
-    for (i = 0; i < count; i++) {
-        if (samples[i] < min) {
-            min = samples[i];
-        }
-    }
-    return min;
-}
+// static double min(double *samples, size_t count)
+// {
+//     size_t i;
+//     double min = INFINITY;
+//     for (i = 0; i < count; i++) {
+//         if (samples[i] < min) {
+//             min = samples[i];
+//         }
+//     }
+//     return min;
+// }
 
 static int benchmark(void *memory, size_t memory_size,
                      uint32_t t_cost, uint32_t m_cost, uint32_t p)
 {
-    static const unsigned char PASSWORD[BENCH_OUTLEN] = { 0 };
-    static const unsigned char SALT[BENCH_INLEN] = { 1 };
+    // static const unsigned char PASSWORD[BENCH_OUTLEN] = { 0 };
+    // static const unsigned char SALT[BENCH_INLEN] = { 1 };
 
-    unsigned char out[BENCH_OUTLEN];
-    struct timestamp start, end;
-    double ms_d[BENCH_MAX_SAMPLES];
-    double ms_i[BENCH_MAX_SAMPLES];
-    double ms_id[BENCH_MAX_SAMPLES];
+    // unsigned char out[BENCH_OUTLEN];
+    // struct timestamp start, end;
+    // double ms_d[BENCH_MAX_SAMPLES];
+    // double ms_i[BENCH_MAX_SAMPLES];
+    // double ms_id[BENCH_MAX_SAMPLES];
 
-    double ms_d_final, ms_i_final, ms_id_final;
-    unsigned int i, bench_samples;
-    argon2_context ctx;
+    // double ms_d_final, ms_i_final, ms_id_final;
+    // unsigned int i, bench_samples;
+    // argon2_context ctx;
 
-    int res;
+    // int res;
 
-    ctx.out = out;
-    ctx.outlen = sizeof(out);
-    ctx.pwd = (uint8_t *)PASSWORD;
-    ctx.pwdlen = sizeof(PASSWORD);
-    ctx.salt = (uint8_t *)SALT;
-    ctx.saltlen = sizeof(SALT);
-    ctx.secret = NULL;
-    ctx.secretlen = 0;
-    ctx.ad = NULL;
-    ctx.adlen = 0;
-    ctx.t_cost = t_cost;
-    ctx.m_cost = m_cost;
-    ctx.lanes = ctx.threads = p;
-    ctx.version = ARGON2_VERSION_NUMBER;
-    ctx.allocate_cbk = NULL;
-    ctx.free_cbk = NULL;
-    ctx.flags = ARGON2_DEFAULT_FLAGS;
+    // ctx.out = out;
+    // ctx.outlen = sizeof(out);
+    // ctx.pwd = (uint8_t *)PASSWORD;
+    // ctx.pwdlen = sizeof(PASSWORD);
+    // ctx.salt = (uint8_t *)SALT;
+    // ctx.saltlen = sizeof(SALT);
+    // ctx.secret = NULL;
+    // ctx.secretlen = 0;
+    // ctx.ad = NULL;
+    // ctx.adlen = 0;
+    // ctx.t_cost = t_cost;
+    // ctx.m_cost = m_cost;
+    // ctx.lanes = ctx.threads = p;
+    // ctx.version = ARGON2_VERSION_NUMBER;
+    // ctx.allocate_cbk = NULL;
+    // ctx.free_cbk = NULL;
+    // ctx.flags = ARGON2_DEFAULT_FLAGS;
 
-    bench_samples = (BENCH_MIN_PASSES * p) / (t_cost * m_cost);
-    bench_samples += (BENCH_MIN_PASSES * p) % (t_cost * m_cost) != 0;
+    // bench_samples = (BENCH_MIN_PASSES * p) / (t_cost * m_cost);
+    // bench_samples += (BENCH_MIN_PASSES * p) % (t_cost * m_cost) != 0;
 
-    if (bench_samples > BENCH_MAX_SAMPLES) {
-        bench_samples = BENCH_MAX_SAMPLES;
-    }
-    for (i = 0; i < bench_samples; i++) {
-        timestamp_store(&start);
-        res = argon2_ctx_mem(&ctx, Argon2_d, memory, memory_size);
-        timestamp_store(&end);
-        if (res != ARGON2_OK) {
-            return res;
-        }
+    // if (bench_samples > BENCH_MAX_SAMPLES) {
+    //     bench_samples = BENCH_MAX_SAMPLES;
+    // }
+    // for (i = 0; i < bench_samples; i++) {
+    //     timestamp_store(&start);
+    //     res = argon2_ctx_mem(&ctx, Argon2_d, memory, memory_size);
+    //     timestamp_store(&end);
+    //     if (res != ARGON2_OK) {
+    //         return res;
+    //     }
 
-        ms_d[i] = timestamp_span_ms(&start, &end);
-    }
+    //     ms_d[i] = timestamp_span_ms(&start, &end);
+    // }
 
-    for (i = 0; i < bench_samples; i++) {
-        timestamp_store(&start);
-        res = argon2_ctx_mem(&ctx, Argon2_i, memory, memory_size);
-        timestamp_store(&end);
-        if (res != ARGON2_OK) {
-            return res;
-        }
+    // for (i = 0; i < bench_samples; i++) {
+    //     timestamp_store(&start);
+    //     res = argon2_ctx_mem(&ctx, Argon2_i, memory, memory_size);
+    //     timestamp_store(&end);
+    //     if (res != ARGON2_OK) {
+    //         return res;
+    //     }
 
-        ms_i[i] = timestamp_span_ms(&start, &end);
-    }
+    //     ms_i[i] = timestamp_span_ms(&start, &end);
+    // }
 
-    for (i = 0; i < bench_samples; i++) {
-        timestamp_store(&start);
-        res = argon2_ctx_mem(&ctx, Argon2_id, memory, memory_size);
-        timestamp_store(&end);
-        if (res != ARGON2_OK) {
-            return res;
-        }
+    // for (i = 0; i < bench_samples; i++) {
+    //     timestamp_store(&start);
+    //     res = argon2_ctx_mem(&ctx, Argon2_id, memory, memory_size);
+    //     timestamp_store(&end);
+    //     if (res != ARGON2_OK) {
+    //         return res;
+    //     }
 
-        ms_id[i] = timestamp_span_ms(&start, &end);
-    }
+    //     ms_id[i] = timestamp_span_ms(&start, &end);
+    // }
 
-    ms_d_final = min(ms_d, bench_samples);
-    ms_i_final = min(ms_i, bench_samples);
-    ms_id_final = min(ms_id, bench_samples);
+    // ms_d_final = min((double*)ms_d, bench_samples);
+    // ms_i_final = min((double*)ms_i, bench_samples);
+    // ms_id_final = min((double*)ms_id, bench_samples);
 
-    printf("%8lu%16lu%8lu%16.6lf%16.6lf%16.6lf\n",
-           (unsigned long)t_cost, (unsigned long)m_cost, (unsigned long)p,
-           ms_d_final, ms_i_final, ms_id_final);
+    // printf("%8lu%16lu%8lu%16.6lf%16.6lf%16.6lf\n",
+    //        (unsigned long)t_cost, (unsigned long)m_cost, (unsigned long)p,
+    //        ms_d_final, ms_i_final, ms_id_final);
     return 0;
 }
 

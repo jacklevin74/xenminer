@@ -7,6 +7,14 @@ set(INCLUDE_INSTALL_DIR /usr/local/include)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++11")
+endif()
+if(WIN32)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+    include(GNUInstallDirs)
+endif()
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -20,17 +28,18 @@ if(NOT NO_CUDA)
     find_package(CUDA)
 endif()
 
-if (APPLE)
-    find_package(OpenCL REQUIRED)
-    include_directories( ${OPENCL_INCLUDE_DIR})
-endif()
-
 if(CUDA_FOUND)
     message("INFO: Using CUDA version ${CUDA_VERSION}")
     add_definitions(-DHAVE_CUDA=1)
 else()
-    message("INFO: Building without CUDA support")
+    message("FATAL_ERROR: Building without CUDA support")
     add_definitions(-DHAVE_CUDA=0)
+endif()
+
+find_package(OpenCL REQUIRED)
+include_directories( ${OPENCL_INCLUDE_DIR})
+if(NOT OpenCL_FOUND)
+    message(FATAL_ERROR "OpenCL not found!")
 endif()
 
 if(CUDA_FOUND)
@@ -104,6 +113,11 @@ endif()
 if (APPLE)
     target_link_libraries(argon2-opencl
         argon2-gpu-common "-framework OpenCL"
+    )
+endif()
+if (WIN32)
+    target_link_libraries(argon2-opencl
+        argon2-gpu-common OpenCL.lib
     )
 endif()
 

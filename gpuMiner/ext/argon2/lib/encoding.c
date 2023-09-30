@@ -4,7 +4,7 @@
 #include <limits.h>
 #include "encoding.h"
 #include "core.h"
-
+#define _CRT_SECURE_NO_WARNINGS
 /*
  * Example code for a decoder and encoder of "hash strings", with Argon2
  * parameters.

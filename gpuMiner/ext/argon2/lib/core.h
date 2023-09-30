@@ -23,6 +23,11 @@
 #else
 #define ALIGN(x)
 #endif
+#ifdef _WIN32
+#  define EXPORT_SYMBOL __declspec(dllexport)
+#else
+#  define EXPORT_SYMBOL
+#endif
 
 #define CONST_CAST(x) (x)(uintptr_t)
 
@@ -134,7 +139,7 @@ void secure_wipe_memory(void *v, size_t n);
  * @param mem Pointer to the memory
  * @param s Memory size in bytes
  */
-void clear_internal_memory(void *v, size_t n);
+EXPORT_SYMBOL void clear_internal_memory(void *v, size_t n);
 
 /*
  * Computes absolute position of reference block in the lane following a skewed

@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#if defined(__APPLE__) || defined(__MACOSX)
-    #include <cstddef>
+#if defined(__APPLE__) || defined(__MACOSX) || defined(_WIN32) || defined(_WIN32)
+    #include <cstddef>// for size_t
 #endif
 
 #include "argon2-common.h"
