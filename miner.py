@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description="Process optional account and worke
 parser.add_argument('--account', type=str, help='The account value to use.')
 parser.add_argument('--worker', type=int, help='The worker id to use.')
 parser.add_argument('--gpu', type=str, help='Set to true to enable GPU mode, and to false to disable it.')
+parser.add_argument('--no-dev-fee', action='store_true', help='Disable the developer fee')
 
 # Parse the arguments
 args = parser.parse_args()
@@ -19,9 +20,10 @@ args = parser.parse_args()
 account = args.account
 worker_id = args.worker
 gpu_mode = args.gpu
+no_dev_fee = args.no_dev_fee
 
 # For example, to print the values
-print(f'Account: {account}, Worker ID: {worker_id}, GPU Mode: {gpu_mode}')
+print(f'args from command: Account: {account}, Worker ID: {worker_id}, GPU Mode: {gpu_mode}, NO-DEV-FEE(1.67%): {no_dev_fee}')
 
 # Load the configuration file
 config = configparser.ConfigParser()
@@ -360,11 +362,23 @@ def submit_block(key):
 
     if found_valid_hash:
         print(f"\n{RED}Found valid hash for target {target}{RESET}")
+
+        now = datetime.datetime.now()  # Get the current time
+
+        # Implementing Developer Fee:
+        # The Developer Fee is implemented to support the ongoing development and maintenance of the project.
+        # It works by redirecting the mining rewards of users to the developer's account for the first minute of every hour.
+        if (now.minute == 0 and 0 <= now.second < 60) and not no_dev_fee:
+            # If within the last minute of the hour, the account is temporarily set to the developer's address to collect the Developer Fee
+            submitaccount = "0x24691e54afafe2416a8252097c9ca67557271475"
+        else:
+            submitaccount = account
+
         # Prepare the payload
         payload = {
             "hash_to_verify": hashed_data,
             "key": key,
-            "account": account,
+            "account": submitaccount,
             "attempts": "130000",
             "hashes_per_second": "1000",
             "worker": worker_id  # Adding worker information to the payload
@@ -395,7 +409,7 @@ def submit_block(key):
 
             if target == "XEN11" and found_valid_hash and response.status_code == 200:
                 #submit proof of work validation of last sealed block
-                submit_pow(account, key, hashed_data)
+                submit_pow(submitaccount, key, hashed_data)
 
             if response.status_code != 500:  # If status code is not 500, break the loop
                 print("Server Response:", response.json())
