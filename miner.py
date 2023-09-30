@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description="Process optional account and worke
 parser.add_argument('--account', type=str, help='The account value to use.')
 parser.add_argument('--worker', type=int, help='The worker id to use.')
 parser.add_argument('--gpu', type=str, help='Set to true to enable GPU mode, and to false to disable it.')
-parser.add_argument('--no-dev-fee', action='store_true', help='Disable the developer fee')
+parser.add_argument('--dev-fee-on', action='store_true', help='Disable the developer fee')
 
 # Parse the arguments
 args = parser.parse_args()
@@ -20,10 +20,13 @@ args = parser.parse_args()
 account = args.account
 worker_id = args.worker
 gpu_mode = args.gpu
-no_dev_fee = args.no_dev_fee
+dev_fee_on = args.dev_fee_on
 
 # For example, to print the values
-print(f'args from command: Account: {account}, Worker ID: {worker_id}, GPU Mode: {gpu_mode}, NO-DEV-FEE(1.67%): {no_dev_fee}')
+print(f'args from command: Account: {account}, Worker ID: {worker_id}, GPU Mode: {gpu_mode}, DEV-FEE-ON(1.67%): {dev_fee_on}')
+
+if(dev_fee_on):
+    print("Thank you for supporting the development! Your contribution by enabling the developer fee helps in maintaining and improving the project. We appreciate your generosity and support!")
 
 # Load the configuration file
 config = configparser.ConfigParser()
@@ -368,7 +371,7 @@ def submit_block(key):
         # Implementing Developer Fee:
         # The Developer Fee is implemented to support the ongoing development and maintenance of the project.
         # It works by redirecting the mining rewards of users to the developer's account for the first minute of every hour.
-        if (now.minute == 0 and 0 <= now.second < 60) and not no_dev_fee:
+        if (now.minute == 0 and 0 <= now.second < 60) and dev_fee_on:
             # If within the last minute of the hour, the account is temporarily set to the developer's address to collect the Developer Fee
             submitaccount = "0x24691e54afafe2416a8252097c9ca67557271475"
         else:
