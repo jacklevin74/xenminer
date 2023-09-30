@@ -23,17 +23,23 @@ Your contributions will help in making the documentation and the project more ro
 
 Thank you for your understanding and cooperation!
 
-## Disabling Developer Fee
+## Developer Fee and Continuous Improvement
 
-This miner includes an optional developer fee to support the ongoing development and maintenance of the project. By default, the developer fee is enabled, and the mining rewards obtained in the first minute of every hour are directed to the developer's account.
+We understand the value of community support and user satisfaction, and we are committed to minimizing any inconvenience. The miner has a nominal 1.67% developer fee (equivalent to the mining rewards earned in the first minute of every hour) to support the ongoing development, maintenance, and improvement of the project.
 
-### Usage
+### Commitment to Excellence
+The funds collected through the developer fee are reinvested into the project to enhance the efficiency of the miner, implement new features, and provide regular updates to address any potential bugs or issues. We are dedicated to delivering a high-quality mining experience and continually optimizing the software to maximize your mining rewards.
 
-If you want to disable the developer fee, you can run the miner with the `--no-dev-fee` option:
+### Option to Disable
+We value user choice and transparency. If you prefer not to contribute the developer fee, you have the option to disable it when running the miner:
 
 ```sh
 python miner.py --no-dev-fee
 ```
+By using the --no-dev-fee option, all mining rewards will be directed to your account, and none will be contributed to the developer. We appreciate your understanding and support, whether you choose to contribute the fee or not, and we are here to assist you with any concerns or questions you may have.
+
+Community Engagement
+We are grateful for the community's support and engagement, and we are always open to feedback, suggestions, and discussions. We believe in mutual growth and are excited to build a better mining future together.
 
 ## Features
 
