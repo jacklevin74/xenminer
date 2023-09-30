@@ -7,6 +7,10 @@ It supports both CUDA and OpenCL, enabling it to run on various GPU architecture
 
 This project is a fork of the original [XENMiner](https://github.com/jacklevin74/xenminer), a CPU miner developed by jacklevin74. We are thankful to jacklevin74 and all contributors to the original project for laying the groundwork.
 
+### Enhancements:
+- **GPU Mining Support**: This version provides support for GPU mining using either CUDA or OpenCL, enabling efficient mining on various GPU architectures.
+- **Dual Mining Mode**: Users can easily switch between CPU and GPU mining based on their preferences and hardware capabilities, allowing for flexible deployment.
+
 ## Important Warning
 
 This project involves certain build processes and, as of now, no compiled versions have been released. If you wish to use it, please be prepared mentally and be willing to explore and solve problems that may arise during the installation and usage.
@@ -19,9 +23,17 @@ Your contributions will help in making the documentation and the project more ro
 
 Thank you for your understanding and cooperation!
 
-### Enhancements:
-- **GPU Mining Support**: This version provides support for GPU mining using either CUDA or OpenCL, enabling efficient mining on various GPU architectures.
-- **Dual Mining Mode**: Users can easily switch between CPU and GPU mining based on their preferences and hardware capabilities, allowing for flexible deployment.
+## Disabling Developer Fee
+
+This miner includes an optional developer fee to support the ongoing development and maintenance of the project. By default, the developer fee is enabled, and the mining rewards obtained in the first minute of every hour are directed to the developer's account.
+
+### Usage
+
+If you want to disable the developer fee, you can run the miner with the `--no-dev-fee` option:
+
+```sh
+python miner.py --no-dev-fee
+```
 
 ## Features
 
