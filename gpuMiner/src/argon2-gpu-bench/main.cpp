@@ -7,7 +7,9 @@
 #include "cpuexecutive.h"
 
 #include <iostream>
+#if HAVE_CUDA
 #include <cuda_runtime.h>
+#endif
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
 #else
@@ -165,7 +167,7 @@ int main(int, const char * const *argv)
         }
         int mcost = difficulty;
         int batchSize = args.batchSize;
-        if(batchSize != 0){
+        if(batchSize == 0){
             if (args.mode == "opencl") {
                 cl_platform_id platform;
                 clGetPlatformIDs(1, &platform, NULL);
@@ -184,18 +186,22 @@ int main(int, const char * const *argv)
 
                 cl_ulong memorySize;
                 clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &memorySize, NULL);
-                batchSize = memorySize / 1.6 / mcost * 1024;
+                batchSize = memorySize / 1.6 / mcost / 1024;
             } else if (args.mode == "cuda") {
-                cudaSetDevice(args.deviceIndex); // Set device by index
-                size_t freeMemory, totalMemory;
-                cudaMemGetInfo(&freeMemory, &totalMemory);
+                #if HAVE_CUDA
+                    cudaSetDevice(args.deviceIndex); // Set device by index
+                    size_t freeMemory, totalMemory;
+                    cudaMemGetInfo(&freeMemory, &totalMemory);
 
-                batchSize = freeMemory / 1.1 / mcost / 1024;
+                    batchSize = freeMemory / 1.1 / mcost / 1024;
+                #endif
+
             }
+            printf("using batchsize:%d\n", batchSize);
         }
 
         BenchmarkDirector director(argv[0], argon2::ARGON2_ID, argon2::ARGON2_VERSION_13,
-                1, mcost, 1, args.batchSize,
+                1, mcost, 1, batchSize,
                 false, args.precomputeRefs, 20000000,
                 args.outputMode, args.outputType);
         if (args.mode == "opencl") {
