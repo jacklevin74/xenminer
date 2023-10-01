@@ -2,3 +2,4 @@ xengpuminer
 difficulty.txt
 build/
 blockchain.db
+blockchain.db-journal
