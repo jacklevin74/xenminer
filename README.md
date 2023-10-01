@@ -57,7 +57,6 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 The following are features and enhancements that are planned to be incorporated in future versions of this project:
 
-- **AMD and OpenCL Support**: We are actively working to fully support AMD GPUs and OpenCL.
 - **Windows Compilation Guide**: A detailed guide for compiling and installing on Windows is planned to assist Windows users in utilizing this tool more conveniently.
 - **Precompiled Versions**: We are planning to release precompiled versions to facilitate easier installations.
 
