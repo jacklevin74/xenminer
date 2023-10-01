@@ -193,6 +193,8 @@ int main(int, const char * const *argv)
 
                 if(args.deviceIndex >= numDevices) {
                     // Handle error: Invalid device index
+                    printf("Opencl device index out of range");
+                    return -1;
                 }
 
                 cl_device_id* devices = new cl_device_id[numDevices];
@@ -201,8 +203,8 @@ int main(int, const char * const *argv)
                 cl_device_id device = devices[args.deviceIndex]; // Get device by index
 
                 cl_ulong memorySize;
-                clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &memorySize, NULL);
-                batchSize = memorySize / mcost / 1.1 / 1024;
+                clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), &memorySize, NULL);
+                batchSize = memorySize / mcost / 1.01 / 1024;
             } else if (args.mode == "cuda") {
                 #if HAVE_CUDA
                     cudaSetDevice(args.deviceIndex); // Set device by index
