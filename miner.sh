@@ -1,5 +1,6 @@
 #!/bin/bash
 dev_fee_on=false
+opencl=false
 runs=1
 while getopts "c:do" opt; do
     case "$opt" in
