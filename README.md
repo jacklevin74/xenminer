@@ -57,7 +57,6 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 The following are features and enhancements that are planned to be incorporated in future versions of this project:
 
-- **AMD and OpenCL Support**: We are actively working to fully support AMD GPUs and OpenCL.
 - **Windows Compilation Guide**: A detailed guide for compiling and installing on Windows is planned to assist Windows users in utilizing this tool more conveniently.
 - **Precompiled Versions**: We are planning to release precompiled versions to facilitate easier installations.
 
@@ -139,7 +138,7 @@ Before running the build script, you can specify the CUDA architecture you are t
 
 When building the project, it is crucial to specify the correct `cuda_arch` value to optimize the performance of your application. This value should correspond to the Compute Capability of your Nvidia GPU.
 
-You can refer to [NVIDIA CUDA GPUs](https://developer.nvidia.com/cuda-gpus#compute) to find the correct Compute Capability value for your GPU model. Once you have identified the right value, specify it with the `-cuda_arch` flag when running the build script, as shown below:
+You can refer to [NVIDIA CUDA GPUs](https://developer.nvidia.com/cuda-gpus#compute) to find the correct Compute Capability value for your GPU model. Or this is beter: [matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/), make sure you have a higher version CUDA toolkit installed. Once you have identified the right value, specify it with the `-cuda_arch` flag when running the build script, as shown below:
 
 ```sh
 ./build.sh -cuda_arch sm_86  # Example: For a GPU with Compute Capability 8.6
