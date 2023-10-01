@@ -200,11 +200,16 @@ Note: If opencl is used, two-thirds of the total gpu memory will be used for com
 
 ## Listing Available Devices
 
-To view a list of all available devices that XENGPUMiner can use, you can use the `-l` argument:
+To view a list of all available devices that XENGPUMiner can utilize, you can use the `-l` argument, combined with either `-m opencl` or `-m cuda` to specify the type of devices you want to list:
 
 ```bash
-./xengpuminer -l
+./xengpuminer -l -m opencl
 ```
+or
+```bash
+./xengpuminer -l -m cuda
+```
+
 This command will display a list of all the GPUs available on your system, along with their indices, which you can use with the `-d <GPU_INDEX>` argument to select a specific GPU for mining.
 
 
