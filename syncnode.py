@@ -8,10 +8,13 @@ import json
 
 
 # Create the parser
-parser = argparse.ArgumentParser(description="Your script description")
+parser = argparse.ArgumentParser(description="XenBLOCKs node synchronizer")
 
 # Add Ethereum address argument
 parser.add_argument("ethereum_address", type=str, help="Your Ethereum address")
+
+# Add verify argument
+parser.add_argument("--verify", action="store_true", help="Enable argon2 verification")
 
 # Parse the arguments
 args = parser.parse_args()
@@ -20,6 +23,9 @@ args = parser.parse_args()
 global my_ethereum_address
 my_ethereum_address = args.ethereum_address
 
+# Set the verify flag as a global variable
+global verify_flag
+verify_flag = args.verify
 
 
 def hash_value(value):
@@ -148,8 +154,15 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             key = record.get('key')
             account = record.get('account')
 
-            if argon2.verify(key, hash_to_verify):
+            if verify_flag:
+                if argon2.verify(key, hash_to_verify):
+                    verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
+                else:
+                    print ("Key and hash_to_verify fail argon2 verification ", key, hash_to_verify)
+                    exit(0)
+            else:
                 verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
+
         
         if verified_hashes:  # Only insert if there are verified hashes
             merkle_root, _ = build_merkle_tree(verified_hashes)
@@ -171,9 +184,9 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             counter += 1
             
             # Commit every 10 blocks
-            if counter % 1 == 0:
+            if counter % 1 == 3:
                 conn.commit()
-                print(f"Committed {counter} blocks to the database.")
+                #print(f"Committed {counter} blocks to the database.")
                 
 # Commit any remaining blocks that were not committed inside the loop
 conn.commit()
@@ -209,12 +222,16 @@ def verify_block_hashes():
             key = record.get("key")
             account = record.get("account")
 
-            if argon2.verify(key, hash_to_verify):
-                verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
-                #print ("Key and hash_to_verify pass argon2 verification ", key, hash_to_verify)
+            if verify_flag:
+                if argon2.verify(key, hash_to_verify):
+                    verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
+                else:
+                    print ("Key and hash_to_verify fail argon2 verification ", key, hash_to_verify)
+                    return False
             else:
-                print ("Key and hash_to_verify fail argon2 verification ", key, hash_to_verify)
-                return False;
+                verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
+
+
 
         if verified_hashes:
             computed_merkle_root, _ = build_merkle_tree(verified_hashes)
@@ -233,5 +250,5 @@ def verify_block_hashes():
     return True
 
 # Call verify_block_hashes after your existing code
-#verify_block_hashes()
-#validate()
+verify_block_hashes()
+validate()
