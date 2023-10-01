@@ -19,7 +19,7 @@ ProgramContext::ProgramContext(
 
     program = KernelLoader::loadArgon2Program(
                 // FIXME path:
-                context, "./data/kernels", type, version);
+                context, "./gpuMiner/data/kernels", type, version);
 }
 
 } // namespace opencl
