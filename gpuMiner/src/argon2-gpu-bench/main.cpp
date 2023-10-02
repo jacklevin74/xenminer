@@ -164,15 +164,15 @@ int main(int, const char * const *argv)
     }
     if(args.benchmark){
         // difficulty from 50 to 1000000 step 100
-        int min_difficulty = 100;
+        int min_difficulty = 1000;
         int max_difficulty = 1000000;
-        int step = 500;
+        int step = 1000;
         int batchSize = args.batchSize;
         size_t usingMemory = 0;
         size_t totalMemory = 0;
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
-        int samples = 1;
+        int samples = 2;
         std::ostringstream oss;
         oss << std::put_time(&tm, "benchmark_%Y%m%d_%H%M%S_") << args.benchmarkDeviceName << ".csv";
         std::string fileName = oss.str();
@@ -231,7 +231,7 @@ int main(int, const char * const *argv)
                 int rate = 0;
                 BenchmarkDirector director(argv[0], argon2::ARGON2_ID, argon2::ARGON2_VERSION_13,
                     1, mcost, 1, batchSize,
-                    false, args.precomputeRefs, 2,
+                    false, args.precomputeRefs, samples,
                     args.outputMode, args.outputType, true);
                 if (args.mode == "opencl") {
                     OpenCLExecutive exec(args.deviceIndex, args.listDevices);
