@@ -166,13 +166,13 @@ int main(int, const char * const *argv)
         // difficulty from 50 to 1000000 step 100
         int min_difficulty = 100;
         int max_difficulty = 1000000;
-        int step = 100;
+        int step = 500;
         int batchSize = args.batchSize;
         size_t usingMemory = 0;
         size_t totalMemory = 0;
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
-        int samples = 2;
+        int samples = 1;
         std::ostringstream oss;
         oss << std::put_time(&tm, "benchmark_%Y%m%d_%H%M%S_") << args.benchmarkDeviceName << ".csv";
         std::string fileName = oss.str();
