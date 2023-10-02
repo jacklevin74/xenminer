@@ -164,15 +164,15 @@ int main(int, const char * const *argv)
     }
     if(args.benchmark){
         // difficulty from 50 to 1000000 step 100
-        int min_difficulty = 1000;
+        int min_difficulty = 100;
         int max_difficulty = 1000000;
-        int step = 1000;
+        int step = 100;
         int batchSize = args.batchSize;
         size_t usingMemory = 0;
         size_t totalMemory = 0;
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
-        int samples = 2;
+        int samples = 5;
         std::ostringstream oss;
         oss << std::put_time(&tm, "benchmark_%Y%m%d_%H%M%S_") << args.benchmarkDeviceName << ".csv";
         std::string fileName = oss.str();
@@ -221,6 +221,11 @@ int main(int, const char * const *argv)
         outputFile << "# Using Memory: " << usingMemory << "\n";
         outputFile << "Difficulty,BatchSize,HashSpeed\n";
         for(int mcost =min_difficulty; mcost <= max_difficulty; mcost+=step){
+            if(100<mcost && mcost<1000) step = 10;
+            if(1000<mcost && mcost<10000) step = 100;
+            if(10000<mcost && mcost<100000) step = 1000;
+            if(100000<mcost && mcost<1000000) step = 10000;
+
             if(!running)break;
             // bs from 1 to batchsize, step 2^x
             batchSize = usingMemory / mcost / 1.01 / 1024;
