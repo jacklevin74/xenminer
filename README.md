@@ -67,7 +67,7 @@ The following are features and enhancements that are planned to be incorporated 
 - CMake (>= 3.7)
 - C++ Compiler with C++11 support
 
-## Quick Start
+## Quick Start[CUDA version]
 
 If you're familiar with using a terminal, the following commands can help you get started quickly. 
 
@@ -80,8 +80,8 @@ chmod +x build.sh  # Make the build script executable
 sudo apt install ocl-icd-opencl-dev  # Install OpenCL development package
 ./build.sh  # Run the build script
 pip install -U -r requirements.txt  # Install the required Python packages
-screen -S "gpuminer" -dm bash -c "python miner.py --gpu=true"  # Start the Python miner in a new screen session
-screen -S "gpuminer" -X screen bash -c "./xengpuminer -b 128"  # Start the GPU miner in the same screen session
+chmod +x miner.sh
+./miner.sh
 ```
 Please note that this Quick Start assumes you are on a Debian-based system (like Ubuntu) and have some knowledge of Linux command line, and it is only intended to serve as a basic guide to get the software running quickly. For more detailed information on building and configuring the miner, refer to the relevant sections of this document.
 
@@ -147,110 +147,111 @@ If you omit the `-cuda_arch` flag, the build script will default to using `sm_75
 
 ## Usage
 
-It is crucial to understand that `miner.py` and `xengpuminer` must operate concurrently within the same directory. `xengpuminer` executes the local, offline mining processes through files, while `miner.py` is responsible for outputting `difficulty.txt` and continuously monitoring and verifying the blocks output to the `gpu_found_blocks_tmp` directory before uploading them. Their interdependence means they need to be run in tandem in the same directory for the entire mining operation to function correctly.
-
-### Specific Responsibilities of Each Component:
-
-1. **xengpuminer:**
-   - Performs offline, local mining.
-   - Processes data through files.
-   - Does not require network connectivity.
-
-2. **miner.py:**
-   - Outputs the `difficulty.txt` file.
-   - Continuously scans, verifies, and uploads the blocks found in the `gpu_found_blocks_tmp` directory.
-   - Requires network connectivity to upload verified blocks.
-
-### Running the Components
-
-Before running the Python miner, if you have not run the CPU version before, make sure to install the necessary Python packages by running the following command:
+### Preliminary Setup:
+Install the necessary Python packages before running the CPU version for the first time:
 ```sh
 pip install -U -r requirements.txt
 ```
+### Streamlined Operation:
 
-Ensure that both `miner.py` and `xengpuminer` are launched within the same directory. Their cooperative operation is pivotal for seamless mining and uploading of blocks.
-
-```sh
-# Running miner.py
-$ python miner.py --gpu=true
-
-# Running xengpuminer in a separate session or terminal, but in the same directory
-$ ./xengpuminer
-```
-
-### Additional Configuration Options
-You can also specify whether to enable GPU mode by adding the --gpu parameter when running the Python miner:
+For a concise, unified approach to running and managing the miners, a Bash script can be used, allowing specified configurations, such as the number of GPUs, CPU cores, enabling OpenCL, and more. This simplifies the entire process, aiding users in launching and managing the mining operation effectively. Here's a quick running example. More details check `Bash Script Usage and Options`.
 
 ```sh
-$ python miner.py --gpu=true  # To enable GPU mode (default)
-$ python miner.py --gpu=false  # To disable GPU mode and run in CPU mode
-```
-Note: The -b parameter represents the number of hashes to process in a single batch. While the maximum value for this parameter is dependent on the available GPU memory, a moderate value is recommended. As long as the total number of hashes is sufficient, a moderate batch size should suffice.
-
-Typically, about difficulty * [-b para] * 1024 Bytes of GPU memory is needed.
-
-If you are running the miner with OpenCL, add the -m opencl parameter:
-
-```sh
-$ ./xengpuminer -m opencl
-```
-The -b parameter is not mandatory. If omitted, the system will automatically adjust the batch size for optimum resource utilization.
-Note: If opencl is used, two-thirds of the total gpu memory will be used for computing
-
-## Listing Available Devices
-
-To view a list of all available devices that XENGPUMiner can utilize, you can use the `-l` argument, combined with either `-m opencl` or `-m cuda` to specify the type of devices you want to list:
-
-```bash
-./xengpuminer -l -m opencl
-```
-or
-```bash
-./xengpuminer -l -m cuda
+$ chmod +x miner.sh
+$ ./miner.sh
 ```
 
-This command will display a list of all the GPUs available on your system, along with their indices, which you can use with the `-d <GPU_INDEX>` argument to select a specific GPU for mining.
-
-
-### Running with Specific GPU
-
-XENGPUMiner supports multiple GPUs, and you can specify which GPU to use by providing the `-d` argument followed by the index of the GPU.
-
-```bash
-./xengpuminer -d <GPU_INDEX>
+### Bash Script Usage and Options:
+``` sh
+$ ./miner.sh -g <num_of_gpus> -c <num_of_cpu_cores> [-d] [-o] [-s] [-h]
 ```
-Where <GPU_INDEX> is the index of the GPU you want to use. For example, to use the first GPU, you can run:
-```bash
-./xengpuminer -d 0
+Options:
 ```
-To use the second GPU, you can run:
-```bash
-./xengpuminer -d 1
+  -g, --gpus <num>           Number of GPUs (Default: 1)
+  -c, --cpucores <num>       Number of CPU cores; activates CPU mode if >0 (Default: 0)
+  -d, --devfee, --dev-fee-on Enable dev fee (Default: off)
+  -o, --opencl               Enable OpenCL computation (Default: off)
+  -s, --silence              Run in silence/background mode (Default: off)
+  -h, --help                 Display help message and exit
 ```
-Running with Multiple GPUs
-To run XENGPUMiner with multiple GPUs, you can start separate instances of the program, each specifying a different GPU index with the `-d` argument. Ensure each instance is run in a separate session or terminal window.
+### Further Assistance:
+If you experience any issues or have any queries, refer to the provided documentation or seek support from the community or support channels.
 
-#### Quick Tips
+## Advanced Operations and Customizations
+The detailed operations and customizations provided in this section are not mandatory for all users but are intended for those who wish to understand the intricacies and tailor the mining operation to their needs.
 
-To reattach to a screen session, use `screen -r miner`.
-Check your system documentation for more advanced usage of `nohup` and `screen`.
+### Component Responsibilities:
+1. **xengpuminer:**
+   - Executes offline, local mining through files.
+   - Operates independently of network connectivity.
 
-To run the miner in the background, you can use nohup or screen (depending on your system and preferences):
-```sh
-nohup ./xengpuminer &
-```
-Or, with screen **recommanded**:
-```sh
-screen -S miner
-./xengpuminer
-# Press 'Ctrl-A' followed by 'D' to detach the screen session.
-```
-### Configuration Reminder
-Before starting the miner, don't forget to configure your account address in the `config.conf` file. The default account address is set to `0x24691e54afafe2416a8252097c9ca67557271475`. Please replace it with your own account address to receive mining rewards.
+2. **miner.py:**
+   - Outputs the `difficulty.txt` file.
+   - Monitors, verifies, and uploads blocks found in the `gpu_found_blocks_tmp` directory.
+   - Requires network connectivity to upload verified blocks.
 
-Here’s how the `config.conf` file will look:
+### Using xengpuminer with Advanced Options
 
+`xengpuminer` provides several advanced options to help you configure your mining processes more precisely. Here's a guide on how to utilize these options effectively:
+
+1. **List Devices:**
+   ```sh
+   $ ./xengpuminer -l -m <DEVICE_TYPE>
+   ```
+   The `-l` flag lists all available devices. Replace `<DEVICE_TYPE>` with either `cuda` or `opencl` to list the corresponding type of devices available on your system. For instance:
+   ```sh
+   $ ./xengpuminer -l -m cuda
+   ```
+   Lists all CUDA-compatible devices available.
+
+2. **Select Mode:**
+   ```sh
+   $ ./xengpuminer -m <MODE>
+   ```
+   The `-m` flag allows you to choose the mode in which to run xengpuminer. Replace `<MODE>` with `cuda` for CUDA, `opencl` for OpenCL. For example:
+   
+   ```sh
+   $ ./xengpuminer -m opencl
+   ```
+   Executes xengpuminer in OpenCL mode.
+
+3. **Specify Device:**
+   ```sh
+   $ ./xengpuminer -d <INDEX>
+   ```
+   The `-d` flag lets you use the device with the specified index. Replace `<INDEX>` with the index of the device you want to use. For instance:
+   ```sh
+   $ ./xengpuminer -d 0
+   ```
+   Uses the first device on the list of available devices.
+
+4. **Define Batch Size:**
+   ```sh
+   $ ./xengpuminer -b <N>
+   ```
+   The `-b` flag denotes the number of tasks per batch. Replace `<N>` with the desired batch size. For example:
+   ```sh
+   $ ./xengpuminer -b 16
+   ```
+   Processes 16 tasks per batch, which can be optimal depending on your device's capabilities and your specific needs.
+
+5. **Display Help:**
+   ```sh
+   $ ./xengpuminer -?
+   ```
+   Shows help for xengpuminer's options and exits, providing quick reference to the options available for configuration.
+
+### Advanced Options for miner.py:
+
+You can configure `miner.py` using command-line arguments or the `config.conf` file. Command-line arguments will override the corresponding settings in `config.conf`.
+
+Command-Line Arguments:
+`--account`: Specify the account address for receiving mining rewards.
+`--dev-fee-on`: Enable the developer fee to support the project.
+`--gpu`: Set to `true` to enable GPU mode, `false` to run in CPU mode.
+
+Configuring Account in `config.conf`:
+Replace the default account address in `config.conf` with your own to receive mining rewards:
 ```ini
-account = YOUR_ACCOUNT_ADDRESS
+account = YOUR_ACCOUNT_ADDRESS  # Replace with your actual account address
 ```
-Replace `YOUR_ACCOUNT_ADDRESS` with your actual account address.
