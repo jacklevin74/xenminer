@@ -27,6 +27,8 @@ private:
     bool bySegment, precomputeRefs;
     std::string outputMode, outputType;
     bool beVerbose;
+    bool benchmark = false;
+    std::string benchmarkFileName;
 
 public:
     const std::string &getProgname() const { return progname; }
@@ -46,12 +48,12 @@ public:
                       std::size_t batchSize, bool bySegment,
                       bool precomputeRefs, std::size_t samples,
                       const std::string &outputMode,
-                      const std::string &outputType)
+                      const std::string &outputType, bool benchmark = false)
         : progname(progname), type(type), version(version),
           t_cost(t_cost), m_cost(m_cost), lanes(lanes), batchSize(batchSize),
           samples(samples), bySegment(bySegment), precomputeRefs(precomputeRefs),
           outputMode(outputMode), outputType(outputType),
-          beVerbose(outputMode == "verbose")
+          beVerbose(outputMode == "verbose"), benchmark(benchmark)
     {
     }
 

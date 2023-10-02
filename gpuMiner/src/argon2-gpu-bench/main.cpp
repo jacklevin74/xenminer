@@ -30,6 +30,9 @@ struct Arguments
     std::string kernelType = "oneshot";
     bool precomputeRefs = false;
 
+    std::string benchmarkDeviceName = "unknowDevice";
+    bool benchmark = false;
+    
     bool showHelp = false;
     bool listDevices = false;
 };
@@ -52,7 +55,9 @@ static CommandLineParser<Arguments> buildCmdLineParser()
             makeNumericHandler<Arguments, std::size_t>([] (Arguments &state, std::size_t index) {
                 state.deviceIndex = index;
             }), "device", 'd', "use device with index INDEX", "0", "INDEX"),
-
+        new ArgumentOption<Arguments>(
+            [] (Arguments &state, const std::string &name) { state.benchmarkDeviceName = name; state.benchmark = true; },
+            "device-name", 't', "use device with name NAME", "unknowDevice", "NAME"),
         new ArgumentOption<Arguments>(
             [] (Arguments &state, const std::string &type) { state.outputType = type; },
             "output-type", 'o', "what to output (ns|ns-per-hash)", "ns", "TYPE"),
@@ -108,8 +113,8 @@ void read_difficulty_periodically(const std::string& filename) {
             std::cerr << "The local difficult.txt file was not recognized" << std::endl;
         }
         
-        // sleep for 10 seconds
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        // sleep for 3 seconds
+        std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 }
 #include <atomic>
@@ -124,6 +129,7 @@ void signalHandler(int signum) {
         std::cout << "change difficulty to " << difficulty << ", waiting process end" << std::endl;
     }
 }
+#include <iomanip>
 
 int main(int, const char * const *argv)
 {
@@ -156,6 +162,91 @@ int main(int, const char * const *argv)
         }
         return 0;
     }
+    if(args.benchmark){
+        // difficulty from 50 to 1000000 step 100
+        int min_difficulty = 100;
+        int max_difficulty = 1000000;
+        int step = 100;
+        int batchSize = args.batchSize;
+        size_t usingMemory = 0;
+        size_t totalMemory = 0;
+        auto t = std::time(nullptr);
+        auto tm = *std::localtime(&t);
+        int samples = 2;
+        std::ostringstream oss;
+        oss << std::put_time(&tm, "benchmark_%Y%m%d_%H%M%S_") << args.benchmarkDeviceName << ".csv";
+        std::string fileName = oss.str();
+        if(args.batchSize == 0){
+            if (args.mode == "opencl") {
+                cl_platform_id platform;
+                clGetPlatformIDs(1, &platform, NULL);
+
+                cl_uint numDevices;
+                clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices); // Assuming you are interested in GPU devices
+
+                if(args.deviceIndex >= numDevices) {
+                    // Handle error: Invalid device index
+                    printf("Opencl device index out of range");
+                    return -1;
+                }
+
+                cl_device_id* devices = new cl_device_id[numDevices];
+                clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, numDevices, devices, NULL);
+
+                cl_device_id device = devices[args.deviceIndex]; // Get device by index
+
+                cl_ulong memorySize;
+                cl_ulong globalSize;
+                clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), &memorySize, NULL);
+                clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &globalSize, NULL);
+                usingMemory = memorySize;
+                totalMemory = globalSize;
+            } else if (args.mode == "cuda") {
+                #if HAVE_CUDA
+                    cudaSetDevice(args.deviceIndex); // Set device by index
+                    size_t freeMemory, tMemory;
+                    cudaMemGetInfo(&freeMemory, &tMemory);
+                    usingMemory = freeMemory;
+                    totalMemory = tMemory;
+                #endif
+            }
+        }
+
+        std::ofstream outputFile(fileName, std::ios::app);
+        outputFile << "# GPU Model: " << args.benchmarkDeviceName << "\n";
+        outputFile << "# Date: " << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << "\n";
+        outputFile << "# Difficulty: " << min_difficulty << " to " << max_difficulty << " step " << step << "\n";
+        outputFile << "# Samples: " << samples << "\n";
+        outputFile << "# Total Memory: " << totalMemory << "\n";
+        outputFile << "# Using Memory: " << usingMemory << "\n";
+        outputFile << "Difficulty,BatchSize,HashSpeed\n";
+        for(int mcost =min_difficulty; mcost <= max_difficulty; mcost+=step){
+            if(!running)break;
+            // bs from 1 to batchsize, step 2^x
+            batchSize = usingMemory / mcost / 1.01 / 1024;
+            // int initbs = batchSize>16?16:1;
+            int initbs = batchSize;
+            for(int bs = initbs; bs <= batchSize; bs*=2){
+                if(!running)break;
+                int rate = 0;
+                BenchmarkDirector director(argv[0], argon2::ARGON2_ID, argon2::ARGON2_VERSION_13,
+                    1, mcost, 1, batchSize,
+                    false, args.precomputeRefs, 2,
+                    args.outputMode, args.outputType, true);
+                if (args.mode == "opencl") {
+                    OpenCLExecutive exec(args.deviceIndex, args.listDevices);
+                    rate = exec.runBenchmark(director);
+                } else if (args.mode == "cuda") {
+                    CudaExecutive exec(args.deviceIndex, args.listDevices);
+                    rate = exec.runBenchmark(director);
+                }
+                outputFile << mcost << "," << batchSize << "," << rate << "\n";
+            }
+            printf("benchmark difficulty:%d, batchSize:%d\n", mcost, batchSize);
+        }
+        outputFile.close();
+        return 0;
+    }
     std::ifstream file("difficulty.txt");
     if (file.is_open()) {
         int new_difficulty;
@@ -173,7 +264,6 @@ int main(int, const char * const *argv)
     // start a thread to read difficulty from file
     std::thread t(read_difficulty_periodically, "difficulty.txt"); 
     t.detach(); // detach thread from main thread, so it can run independently
-
     for(int i = 0; i < std::numeric_limits<size_t>::max(); i++){
         if(!running)break;
 

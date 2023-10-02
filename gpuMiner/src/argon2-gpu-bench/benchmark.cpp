@@ -22,13 +22,18 @@ int BenchmarkDirector::runBenchmark(Argon2Runner &runner) const
     DummyPasswordGenerator pwGen;
     RunTimeStats stats(batchSize);
     long long int hashtotal = 0;
+    if(this->benchmark){
+        difficulty = m_cost;
+    }
     for (std::size_t i = 0; i < samples; i++) {
         // break when mcost changed
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            if(difficulty != m_cost){
-                std::cout << "difficulty changed: " <<m_cost<<">>"<< difficulty <<", end"<< std::endl;
-                break;
+        if(!this->benchmark){
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                if(difficulty != m_cost){
+                    std::cout << "difficulty changed: " <<m_cost<<">>"<< difficulty <<", end"<< std::endl;
+                    break;
+                }
             }
         }
         auto ctime = runner.runBenchmark(*this, pwGen);
@@ -71,5 +76,5 @@ int BenchmarkDirector::runBenchmark(Argon2Runner &runner) const
                  << std::fixed << std::setprecision(2) << RunTimeStats::repr(nanosecs(rr));
     std::cout << std::endl;
 
-    return 0;
+    return rate;
 }
