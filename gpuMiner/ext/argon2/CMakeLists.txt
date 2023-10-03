@@ -24,7 +24,7 @@ add_library(argon2-internal INTERFACE)
 target_include_directories(argon2-internal INTERFACE lib lib/blake2)
 target_link_libraries(argon2-internal INTERFACE argon2-interface)
 
-add_library(argon2 SHARED
+add_library(argon2 STATIC
     lib/argon2.c
     lib/core.c
     lib/encoding.c
@@ -32,10 +32,6 @@ add_library(argon2 SHARED
     lib/impl-select.c
     lib/thread.c
     lib/blake2/blake2.c
-)
-target_link_libraries(argon2
-    PUBLIC argon2-interface ${CMAKE_THREAD_LIBS_INIT}
-    PRIVATE argon2-internal
 )
 
 set_property(TARGET argon2 PROPERTY VERSION ${Upstream_VERSION})
@@ -98,32 +94,8 @@ else()
     )
 endif()
 
-add_executable(argon2-exec src/run.c)
-target_link_libraries(argon2-exec argon2 argon2-internal)
-target_include_directories(argon2-exec PRIVATE src)
-set_target_properties(argon2-exec PROPERTIES OUTPUT_NAME argon2)
-
-add_executable(argon2-genkat src/genkat.c)
-target_include_directories(argon2-genkat PRIVATE src)
-target_link_libraries(argon2-genkat argon2)
-
-add_executable(argon2-bench2 src/bench2.c)
-target_include_directories(argon2-bench2 PRIVATE src)
-if (UNIX AND NOT APPLE)
-    target_link_libraries(argon2-bench2 argon2 -lrt)
-else()
-    target_link_libraries(argon2-bench2 argon2)
-endif()
-
-add_executable(argon2-test tests/test.c)
-target_include_directories(argon2-test PRIVATE tests)
-target_link_libraries(argon2-test argon2)
-
-add_test(test argon2-test)
-
 install(TARGETS argon2 DESTINATION ${LIBRARY_INSTALL_DIR})
 install(FILES
     include/argon2.h
     DESTINATION ${INCLUDE_INSTALL_DIR}
 )
-install(TARGETS argon2-exec DESTINATION ${BINARY_INSTALL_DIR})
