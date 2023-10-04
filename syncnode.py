@@ -184,7 +184,7 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             counter += 1
             
             # Commit every 10 blocks
-            if counter % 1 == 3:
+            if counter % 3 == 0:
                 conn.commit()
                 #print(f"Committed {counter} blocks to the database.")
                 
