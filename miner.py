@@ -143,8 +143,11 @@ class Block:
 updated_memory_cost = 1500 # just initialize it
 
 def write_difficulty_to_file(difficulty, filename='difficulty.txt'):
-    with open(filename, 'w') as file:
-        file.write(difficulty)
+    try:
+        with open(filename, 'w') as file:
+            file.write(difficulty)
+    except Exception as e:
+        print(f"An error occurred while writing difficulty to file: {e}")
 
 def update_memory_cost_periodically():
     global memory_cost
@@ -234,14 +237,19 @@ def submit_pow(account_address, key, hash_to_verify):
             }
 
             # Send POST request
-            pow_response = requests.post('http://xenminer.mooo.com:4446/send_pow', json=payload)
+            try:
+                pow_response = requests.post('http://xenminer.mooo.com:4446/send_pow', json=payload)
 
-            if pow_response.status_code == 200:
-                print(f"Proof of Work successful: {pow_response.json()}")
-            else:
-                print(f"Proof of Work failed: {pow_response.json()}")
+                if pow_response.status_code == 200:
+                    print(f"Proof of Work successful: {pow_response.json()}")
+                else:
+                    print(f"Proof of Work failed: {pow_response.json()}")
 
-            print(f"Block ID: {output_block_id}, Merkle Root: {merkle_root}")
+                print(f"Block ID: {output_block_id}, Merkle Root: {merkle_root}")
+            except requests.exceptions.RequestException as e:
+                # Handle any exceptions that occur during the request
+                print(f"An error occurred: {e}")
+                return None
 
     else:
         print("Failed to fetch the last block.")
@@ -322,31 +330,29 @@ def mine_block(stored_targets, prev_hash):
     retries = 0
 
     while retries <= max_retries:
-        # Make the POST request
-        response = requests.post('http://xenminer.mooo.com/verify', json=payload)
-
-        # Print the HTTP status code
-        print("HTTP Status Code:", response.status_code)
-
-        if target == "XEN11" and found_valid_hash and response.status_code == 200:
-            #submit proof of work validation of last sealed block
-            submit_pow(account, random_data, hashed_data)
-
-        if response.status_code != 500:  # If status code is not 500, break the loop
-            print("Server Response:", response.json())
-            break
-        
-        retries += 1
-        print(f"Retrying... ({retries}/{max_retries})")
-        time.sleep(5)  # You can adjust the sleep time
-
-
-        # Print the server's response
         try:
-            print("Server Response:", response.json())
+            # Make the POST request
+            response = requests.post('http://xenminer.mooo.com/verify', json=payload)
+
+            # Print the HTTP status code
+            print("HTTP Status Code:", response.status_code)
+
+            if target == "XEN11" and found_valid_hash and response.status_code == 200:
+                #submit proof of work validation of last sealed block
+                submit_pow(account, random_data, hashed_data)
+
+            if response.status_code != 500:  # If status code is not 500, break the loop
+                print("Server Response:", response.json())
+                break
+            
+            retries += 1
+            print(f"Retrying... ({retries}/{max_retries})")
+            time.sleep(5)  # You can adjust the sleep time
         except Exception as e:
             print("An error occurred:", e)
-
+    if(retries > max_retries):
+        print(f"Failed to submit block after {retries} retries")
+        return None
     return random_data, hashed_data, attempts, hashes_per_second
 
 normal_blocks_count = 0
@@ -407,46 +413,43 @@ def submit_block(key):
 
         print (payload)
 
-        max_retries = 2
+        max_retries = 5
         retries = 0
 
         while retries <= max_retries:
-            # Make the POST request
-            response = requests.post('http://xenminer.mooo.com/verify', json=payload)
-
-            # Print the HTTP status code
-            print("HTTP Status Code:", response.status_code)
-
-            if found_valid_hash and response.status_code == 200:
-                if "XUNI" in hashed_data:
-                    xuni_blocks_count += 1
-                    break
-                elif "XEN11" in hashed_data:
-                    capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
-                    if capital_count >= 65:
-                        super_blocks_count += 1
-                    else:
-                        normal_blocks_count += 1
-
-            if target == "XEN11" and found_valid_hash and response.status_code == 200:
-                #submit proof of work validation of last sealed block
-                submit_pow(submitaccount, key, hashed_data)
-
-            if response.status_code != 500:  # If status code is not 500, break the loop
-                print("Server Response:", response.json())
-                break
-            
-            retries += 1
-            print(f"Retrying... ({retries}/{max_retries})")
-            time.sleep(5)  # You can adjust the sleep time
-
-
-            # Print the server's response
             try:
-                print("Server Response:", response.json())
+                # Make the POST request
+                response = requests.post('http://xenminer.mooo.com/verify', json=payload)
+
+                # Print the HTTP status code
+                print("HTTP Status Code:", response.status_code)
+
+                if found_valid_hash and response.status_code == 200:
+                    if "XUNI" in hashed_data:
+                        xuni_blocks_count += 1
+                        break
+                    elif "XEN11" in hashed_data:
+                        capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
+                        if capital_count >= 65:
+                            super_blocks_count += 1
+                        else:
+                            normal_blocks_count += 1
+                if target == "XEN11" and found_valid_hash and response.status_code == 200:
+                    #submit proof of work validation of last sealed block
+                    submit_pow(submitaccount, key, hashed_data)
+
+                if response.status_code != 500:  # If status code is not 500, break the loop
+                    print("Server Response:", response.json())
+                    return None
+
+                retries += 1
+                print(f"Retrying... ({retries}/{max_retries})")
+                time.sleep(3)  # You can adjust the sleep time
             except Exception as e:
                 print("An error occurred:", e)
-
+        if(retries > max_retries):
+            print(f"Failed to submit block after {retries} retries")
+            return None
     return key, hashed_data
 
 def monitor_blocks_directory():
