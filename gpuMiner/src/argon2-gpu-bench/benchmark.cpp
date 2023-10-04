@@ -12,6 +12,50 @@ BenchmarkExecutive::~BenchmarkExecutive() { }
 #include <iomanip>
 #include <chrono>
 #include <thread>
+#include <fstream>
+#include <sstream>
+#include <sys/stat.h>
+#include <cstring>
+#ifdef _WIN32
+#include <Windows.h>
+#define GET_PROCESS_ID GetCurrentProcessId
+#else
+#include <unistd.h>
+#define GET_PROCESS_ID getpid
+#endif
+static bool create_directory2(const std::string& path) {
+    size_t pos = 0;
+    do {
+        pos = path.find_first_of('/', pos + 1);
+        std::string subdir = path.substr(0, pos);
+        if (mkdir(subdir.c_str(), 0755) && errno != EEXIST) {
+            std::cerr << "Error creating directory " << subdir << ": " << strerror(errno) << std::endl;
+            return false;
+        }
+    } while (pos != std::string::npos);
+    return true;
+}
+static void saveHashSpeedToFile(double hashspeed) {
+    pid_t processId = GET_PROCESS_ID();
+    std::ostringstream dirStream;
+    dirStream << "hash_rates/";
+    std::string dirStr = dirStream.str();
+
+    if (!create_directory2(dirStr)) {
+        return;
+    }
+    std::ostringstream filename;
+    filename << dirStr << "/" << "hashrate_" + std::to_string(processId) + ".txt";
+    std::ofstream outFile(filename.str());
+    if(!outFile) {
+        std::cerr << "Error opening file " << filename.str() << std::endl;
+        return;
+    }
+    outFile << hashspeed;
+    outFile.close();
+}
+
+
 int BenchmarkDirector::runBenchmark(Argon2Runner &runner) const
 {
     using namespace std;
@@ -55,6 +99,7 @@ int BenchmarkDirector::runBenchmark(Argon2Runner &runner) const
                   << "Difficulty=" << difficulty << "]\r";
         std::cout.flush();
         stats.addSample(ctime);
+        saveHashSpeedToFile(rate);
     }
     stats.close();
     auto elapsed_time = chrono::system_clock::now() - start_time;
