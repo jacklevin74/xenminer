@@ -454,7 +454,7 @@ def submit_block(key):
 
 
 gpu_hash_rate_dir = "hash_rates"
-EXPIRATION_TIME = 30
+EXPIRATION_TIME = 120
 def clear_existing_files():
     for filename in os.listdir(gpu_hash_rate_dir):
         filepath = os.path.join(gpu_hash_rate_dir, filename)
