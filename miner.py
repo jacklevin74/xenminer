@@ -5,6 +5,15 @@ from random import choice, randrange
 import argparse
 import configparser
 
+import signal
+import sys
+
+def signal_handler(sig, frame):
+    global running
+    print("Received Ctrl+C. Cleaning up...")
+    running = False
+
+signal.signal(signal.SIGINT, signal_handler)
 
 # Set up argument parser
 parser = argparse.ArgumentParser(description="Process optional account and worker arguments.")
@@ -153,8 +162,11 @@ def update_memory_cost_periodically():
     global memory_cost
     global updated_memory_cost
     global gpu_mode
+    global running
     time.sleep(2)
     while True:
+        if(not running):
+            break
         updated_memory_cost = fetch_difficulty_from_server()
         if updated_memory_cost != memory_cost:
             if gpu_mode:
@@ -499,7 +511,11 @@ def monitor_hash_rate():
     clear_existing_files()
     global total_hash_rate
     global active_processes
+    global running
+
     while True:
+        if(not running):
+            break
         total_hash_rate, active_processes = get_all_hash_rates()
         time.sleep(1)
 
@@ -508,9 +524,13 @@ def monitor_blocks_directory():
     global super_blocks_count
     global xuni_blocks_count
     global memory_cost
+    global running
+
     with tqdm(total=None, dynamic_ncols=True, desc=f"{GREEN}Mining{RESET}", unit=f" {GREEN}Blocks{RESET}") as pbar:
         pbar.update(0)
         while True:
+            if(not running):
+                break
             BlockDir = f"gpu_found_blocks_tmp/"
             if not os.path.exists(BlockDir):
                 os.makedirs(BlockDir)
@@ -545,7 +565,8 @@ if __name__ == "__main__":
     blockchain = []
     stored_targets = ['XEN11', 'XUNI']
     num_blocks_to_mine = 20000000
-
+    global running
+    running = True
     updated_memory_cost = fetch_difficulty_from_server()
     if updated_memory_cost != memory_cost:
         if gpu_mode:
@@ -573,7 +594,9 @@ if __name__ == "__main__":
 
         try:
             while True:  # Loop forever
-                time.sleep(10)  # Sleep for 10 seconds
+                if(not running):
+                    break
+                time.sleep(2)  # Sleep for 2 seconds
         except KeyboardInterrupt:
             print("Main thread is finished")
     else:
@@ -582,7 +605,8 @@ if __name__ == "__main__":
         while i <= num_blocks_to_mine:
             print(f"Mining block {i}...")
             result = mine_block(stored_targets, blockchain[-1]['hash'])
-
+            if not running:
+                break
             if result is None:
                 print(f"{RED}Restarting mining round{RESET}")
                 # Skip the increment of `i` and continue the loop
