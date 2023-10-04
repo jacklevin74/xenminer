@@ -497,7 +497,7 @@ def monitor_hash_rate():
     global active_processes
     while True:
         total_hash_rate, active_processes = get_all_hash_rates()
-        time.sleep(3)
+        time.sleep(1)
 
 def monitor_blocks_directory():
     global normal_blocks_count
@@ -534,7 +534,7 @@ def monitor_blocks_directory():
                                   "Stat":f"Active:{BLUE}{active_processes}{RESET}, HashRate:{BLUE}{total_hash_rate:.2f}{RESET}h/s", 
                                   "Difficulty":f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
 
-            time.sleep(5)
+            time.sleep(1)
 
 
 if __name__ == "__main__":
