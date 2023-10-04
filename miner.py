@@ -336,11 +336,13 @@ def mine_block(stored_targets, prev_hash):
 
             # Print the HTTP status code
             print("HTTP Status Code:", response.status_code)
+            # Print the server's response
+            print("Server Response:", response.json())
 
             if target == "XEN11" and found_valid_hash and response.status_code == 200:
                 #submit proof of work validation of last sealed block
                 submit_pow(account, random_data, hashed_data)
-
+                break
             if response.status_code != 500:  # If status code is not 500, break the loop
                 print("Server Response:", response.json())
                 break
@@ -423,7 +425,8 @@ def submit_block(key):
 
                 # Print the HTTP status code
                 print("HTTP Status Code:", response.status_code)
-
+                # Print the server's response
+                print("Server Response:", response.json())
                 if found_valid_hash and response.status_code == 200:
                     if "XUNI" in hashed_data:
                         xuni_blocks_count += 1
@@ -437,7 +440,7 @@ def submit_block(key):
                 if target == "XEN11" and found_valid_hash and response.status_code == 200:
                     #submit proof of work validation of last sealed block
                     submit_pow(submitaccount, key, hashed_data)
-
+                    break
                 if response.status_code != 500:  # If status code is not 500, break the loop
                     print("Server Response:", response.json())
                     return None
@@ -450,7 +453,8 @@ def submit_block(key):
         if(retries > max_retries):
             print(f"Failed to submit block after {retries} retries")
             return None
-    return key, hashed_data
+        return key, hashed_data
+    return None
 
 
 gpu_hash_rate_dir = "hash_rates"
@@ -566,6 +570,7 @@ if __name__ == "__main__":
         submit_thread = threading.Thread(target=monitor_blocks_directory)
         submit_thread.daemon = True  # This makes the thread exit when the main program exits
         submit_thread.start()
+
         try:
             while True:  # Loop forever
                 time.sleep(10)  # Sleep for 10 seconds
