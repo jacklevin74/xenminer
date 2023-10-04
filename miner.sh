@@ -9,15 +9,15 @@ fi
 dev_fee_on=false
 opencl=false
 silence=false
-gpus=1
-cpucores=0
+gpus=0
+cpu=false
 
 function display_help() {
     echo "Usage: $0 [OPTIONS]"
     echo
     echo "Options:"
     echo "  -g, --gpus <num>              Set the number of GPUs to use (Default: 1)"
-    echo "  -c, --cpucores <num>          Set the number of CPU cores to use; Only CPU mode is activated when >0 (Default: 0)"
+    echo "  -c, --cpu <num>               Running 1 miner in CPU mode (Default: off)"
     echo "  -d, --devfee, --dev-fee-on    Enable dev fee (Default: off)"
     echo "  -o, --opencl                  Enable OpenCL computation (Default: off)"
     echo "  -s, --silence                 Run in silence/background mode (Default: off)"
@@ -36,16 +36,16 @@ for arg in "$@"; do
         "--devfee") set -- "$@" "-d" ;;
         "--silence") set -- "$@" "-s" ;;
         "--gpus") set -- "$@" "-g" ;;
-        "--cpucores") set -- "$@" "-c" ;;
+        "--cpu") set -- "$@" "-c" ;;
          *) set -- "$@" "$arg"
     esac
 done
 
 # Now, process short options with getopts
-while getopts "g:c:dosh" opt; do
+while getopts "g:cdosh" opt; do
     case "$opt" in
     g) gpus="$OPTARG" ;;
-    c) cpucores="$OPTARG" ;;
+    c) cpu=true ;;
     d) dev_fee_on=true ;;
     o) opencl=true ;;
     s) silence=true ;;
@@ -55,34 +55,15 @@ while getopts "g:c:dosh" opt; do
 done
 
 # cpu mode
-if [ $cpucores -gt 0 ]; then
-    command="python3 miner.py --gpu=false"
-    if $dev_fee_on; then
-        command+=" --dev-fee-on"
-    fi
-    echo "Running in CPU mode with $cpucores cores."
-    if [ $cpucores -gt 99 ]; then
-        echo "CPU cores must be less than 100. More is supported later."
-        exit -1
-    fi
-    if $silence; then
-        for ((i = 0; i < $cpucores; i++)); do
-            if [ $i -eq 0 ]; then
-                screen -S "miner" -dm bash -c "$command"
-            else
-                screen -S "miner" -X screen bash -c "$command"
-            fi
-        done    
-    else
-        echo "Running 1 miner in CPU mode..."
-        bash -c "$command"
-    fi
-    exit 0
+if $cpu; then
+    command="./xengpuminer -m cpu"
+    screen -S "cpuminer" -dm bash -c "$command"
+    echo "Running 1 miner in CPU mode..."
 fi
 
 # gpu mode
-if [ $gpus -lt 1 ]; then
-    echo "Error: GPU number must be greater than 0 or run in CPU mode."
+if [[ $gpus -lt 1 && ! $cpu ]]; then
+    echo "Error: Neither gpu nor cpu mode is selected."
     exit -1
 fi
 for ((i = 0; i < $gpus; i++)); do
@@ -96,16 +77,18 @@ for ((i = 0; i < $gpus; i++)); do
         screen -S "gpuminer" -X screen bash -c "$command"
     fi
 done
-
+if [ $gpus -gt 0 ]; then
+    echo "Running $gpus miners in GPU mode..."
+fi
 command="python3 miner.py"
 if $dev_fee_on; then
     command+=" --dev-fee-on"
 fi
-echo "Successfully started $gpus gpuminers"
 if $silence; then
-    screen -S "miner" -dm bash -c "$command"
-    echo "If you want to stop, run: pkill screen"
+    screen -S submitminer -dm bash -c "$command"
+    echo "If you want to stop, run: pkill xengpuminer && pkill -f submitminer. or simply use pkill -f miner"
 else
     bash -c "$command"
-    bash -c "pkill screen"
+    pkill -f "submitminer"
+    pkill gpuminer
 fi
