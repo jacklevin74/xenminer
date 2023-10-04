@@ -452,6 +452,53 @@ def submit_block(key):
             return None
     return key, hashed_data
 
+
+gpu_hash_rate_dir = "hash_rates"
+EXPIRATION_TIME = 30
+def clear_existing_files():
+    for filename in os.listdir(gpu_hash_rate_dir):
+        filepath = os.path.join(gpu_hash_rate_dir, filename)
+        try:
+            os.remove(filepath)
+        except Exception as e:
+            # Print an error message if a file can't be removed.
+            print(f"Error removing file {filepath}: {e}")
+
+def get_all_hash_rates():
+    total_hash_rate = 0
+    active_processes = 0
+    current_time = time.time()
+    for filename in os.listdir(gpu_hash_rate_dir):
+        filepath = os.path.join(gpu_hash_rate_dir, filename)
+        try:
+            # If a file is older than EXPIRATION_TIME, remove it.
+            if current_time - os.path.getmtime(filepath) > EXPIRATION_TIME:
+                os.remove(filepath)
+                continue
+            
+            # Read the hash rate from the file and add it to the total rate.
+            with open(filepath, "r") as f:
+                hash_rate = float(f.read().strip())
+                total_hash_rate += hash_rate
+            
+            active_processes += 1
+        except (ValueError, IOError) as e:
+            # Ignore files with invalid content or that can't be read.
+            pass
+    return total_hash_rate, active_processes
+
+total_hash_rate = 0
+active_processes = 0
+def monitor_hash_rate():
+    if not os.path.exists(gpu_hash_rate_dir):
+        os.makedirs(gpu_hash_rate_dir)
+    clear_existing_files()
+    global total_hash_rate
+    global active_processes
+    while True:
+        total_hash_rate, active_processes = get_all_hash_rates()
+        time.sleep(3)
+
 def monitor_blocks_directory():
     global normal_blocks_count
     global super_blocks_count
@@ -460,15 +507,15 @@ def monitor_blocks_directory():
     with tqdm(total=None, dynamic_ncols=True, desc=f"{GREEN}Mining{RESET}", unit=f" {GREEN}Blocks{RESET}") as pbar:
         pbar.update(0)
         while True:
-            XENDIR = f"gpu_found_blocks_tmp/"
-            if not os.path.exists(XENDIR):
-                os.makedirs(XENDIR)
-            for filename in os.listdir(XENDIR):
-                filepath = os.path.join(XENDIR, filename)
+            BlockDir = f"gpu_found_blocks_tmp/"
+            if not os.path.exists(BlockDir):
+                os.makedirs(BlockDir)
+            for filename in os.listdir(BlockDir):
+                filepath = os.path.join(BlockDir, filename)
                 with open(filepath, 'r') as f:
                     data = f.read()
-                submit_block(data)
-                pbar.update(1)
+                if(submit_block(data) is not None):
+                    pbar.update(1)
                 os.remove(filepath)
             superblock = f"{RED}super:{super_blocks_count}{RESET} "
             block = f"{GREEN}normal:{normal_blocks_count}{RESET} "
@@ -480,26 +527,40 @@ def monitor_blocks_directory():
             if(xuni_blocks_count == 0):
                 xuni = ""
             if super_blocks_count == 0 and normal_blocks_count == 0 and xuni_blocks_count == 0:
-                pbar.set_postfix({"Details": f"Waiting for blocks..."}, refresh=True)
+                pbar.set_postfix({"Stat":f"Active:{BLUE}{active_processes}{RESET}, HashRate:{BLUE}{total_hash_rate:.2f}{RESET}h/s", 
+                                  "Difficulty":f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
             else:
-                pbar.set_postfix({"Details": f"{superblock}{block}{xuni}"}, refresh=True)
+                pbar.set_postfix({"Details": f"{superblock}{block}{xuni}", 
+                                  "Stat":f"Active:{BLUE}{active_processes}{RESET}, HashRate:{BLUE}{total_hash_rate:.2f}{RESET}h/s", 
+                                  "Difficulty":f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
 
-            time.sleep(1)  # Check every 1 seconds
+            time.sleep(5)
 
 
 if __name__ == "__main__":
     blockchain = []
     stored_targets = ['XEN11', 'XUNI']
     num_blocks_to_mine = 20000000
+
+    updated_memory_cost = fetch_difficulty_from_server()
+    if updated_memory_cost != memory_cost:
+        if gpu_mode:
+            memory_cost = updated_memory_cost
+            write_difficulty_to_file(updated_memory_cost)
+        print(f"Updating difficulty to {updated_memory_cost}")
     
     #Start difficulty monitoring thread
     difficulty_thread = threading.Thread(target=update_memory_cost_periodically)
     difficulty_thread.daemon = True  # This makes the thread exit when the main program exits
     difficulty_thread.start()
 
+    hashrate_thread = threading.Thread(target=monitor_hash_rate)
+    hashrate_thread.daemon = True  # This makes the thread exit when the main program exits
+    hashrate_thread.start()
+
     genesis_block = Block(0, "0", "Genesis Block", "0", "0", "0")
     blockchain.append(genesis_block.to_dict())
-    print(f"Mining with: {account}")
+    print(f"Mining with: {RED}{account}{RESET}")
     if(gpu_mode):
         print(f"Using GPU mode")
         submit_thread = threading.Thread(target=monitor_blocks_directory)
