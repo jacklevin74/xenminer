@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Save the current working directory
+original_dir=$(pwd)
+
 # Default values
 COMPUTE_TYPE="CUDA"
 
@@ -30,4 +33,11 @@ else
     make
 fi
 
-chmod +x miner.sh
+# Return to the original working directory
+cd "$original_dir" || exit
+
+if [ -e miner.sh ]; then
+    chmod +x miner.sh
+else
+    echo "miner.sh does not exist."
+fi
