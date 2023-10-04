@@ -309,6 +309,8 @@ int main(int, const char * const *argv)
                     batchSize = freeMemory / 1.01 / mcost / 1024;
                 #endif
 
+            } else{
+                batchSize = 100;
             }
             printf("using batchsize:%d\n", batchSize);
         }
@@ -322,6 +324,9 @@ int main(int, const char * const *argv)
             exec.runBenchmark(director);
         } else if (args.mode == "cuda") {
             CudaExecutive exec(args.deviceIndex, args.listDevices);
+            exec.runBenchmark(director);
+        }else{
+            CpuExecutive exec(args.deviceIndex, args.listDevices);
             exec.runBenchmark(director);
         }
     }
