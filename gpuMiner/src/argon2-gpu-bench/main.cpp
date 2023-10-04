@@ -162,6 +162,13 @@ int main(int, const char * const *argv)
         }
         return 0;
     }
+    if(args.mode == "cuda"){
+        #if HAVE_CUDA
+        #else
+            printf("Have no CUDA!\n");
+            return -1;
+        #endif
+    }
     if(args.benchmark){
         // difficulty from 50 to 1000000 step 100
         int min_difficulty = 100;
