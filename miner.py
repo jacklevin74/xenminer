@@ -179,7 +179,7 @@ def update_memory_cost_periodically():
 def fetch_difficulty_from_server():
     global memory_cost
     try:
-        response = requests.get('http://xenminer.mooo.com/difficulty')
+        response = requests.get('http://xenminer.mooo.com/difficulty', timeout=10)
         response_data = response.json()
         return str(response_data['difficulty'])
     except Exception as e:
