@@ -24,15 +24,10 @@ if [ -z "$CUDA_ARCH" ]; then
     cmake ..
 
     make
-
-    # Output a message indicating the script has completed successfully
-    echo "Build completed successfully"
 else
     cmake -DCUDA_ARCH=$CUDA_ARCH ..
     # Compile the project
     make
-
-    # Output a message indicating the script has completed successfully
-    echo "Build completed successfully with CUDA_ARCH=${CUDA_ARCH}"
-
 fi
+
+chmod +x miner.sh
