@@ -18,7 +18,11 @@ static constexpr std::size_t SALT_LENGTH = 14;
 #include <sys/stat.h>
 #include <cstring>
 #include <ctime>
-
+#define _CRT_SECURE_NO_WARNINGS
+#ifdef _WIN32
+#include <direct.h>
+#define mkdir(path, mode) _mkdir(path)
+#endif
 bool is_within_five_minutes_of_hour2() {
     auto now = std::chrono::system_clock::now();
     std::time_t time_now = std::chrono::system_clock::to_time_t(now);
@@ -139,10 +143,10 @@ private:
             const void *pw;
             std::size_t pwSize;
 
-            std::string input = "377a8864b41d15652f304159c7aa00510fcca4bd81ccf07d2ef5fdaebca6ce6e9c35685e183daa0f2d54bbefbf707ebc0ae25c2ff3dcc7c140b08d678082f37e";
-            pwSize = 128;
-            pw = input.c_str();
-            // pwGen.nextPassword(pw, pwSize);
+            //std::string input = "377a8864b41d15652f304159c7aa00510fcca4bd81ccf07d2ef5fdaebca6ce6e9c35685e183daa0f2d54bbefbf707ebc0ae25c2ff3dcc7c140b08d678082f37e";
+            //pwSize = 128;
+            //pw = input.c_str();
+            pwGen.nextPassword(pw, pwSize);
 
             argon2_context ctx;
             ctx.out = out.get();
@@ -208,7 +212,8 @@ public:
             nworkers = 1;
             nthreads = parallelism;
         }
-
+        nworkers = 1;
+        nthreads = 1;
         futures.reserve(nworkers);
 
         for (std::size_t i = 0; i < nworkers; i++) {
