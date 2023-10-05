@@ -42,10 +42,10 @@ for arg in "$@"; do
 done
 
 # Now, process short options with getopts
-while getopts "g:cdosh" opt; do
+while getopts "g:c:dosh" opt; do
     case "$opt" in
     g) gpus="$OPTARG" ;;
-    c) cpu=true ;;
+    c) cpu="$OPTARG" ;;
     d) dev_fee_on=true ;;
     o) opencl=true ;;
     s) silence=true ;;
@@ -55,14 +55,21 @@ while getopts "g:cdosh" opt; do
 done
 
 # cpu mode
-if $cpu; then
+if [ $cpu -gt 0 ]; then
+    echo "Running $cpu miner in CPU mode..."
+
     command="./xengpuminer -m cpu"
-    screen -S "cpuminer" -dm bash -c "$command"
-    echo "Running 1 miner in CPU mode..."
+    for ((i = 0; i < $cpu; i++)); do
+        if [ $i -eq 0 ]; then
+            screen -S "gpuminer" -dm bash -c "$command"
+        else
+            screen -S "gpuminer" -X screen bash -c "$command"
+        fi
+    done
 fi
 
 # gpu mode
-if [[ $gpus -lt 1 && ! $cpu ]]; then
+if [[ $gpus -lt 1 && $cpu -lt 1 ]]; then
     echo "Error: Neither gpu nor cpu mode is selected."
     exit -1
 fi
