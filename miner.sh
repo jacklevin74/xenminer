@@ -61,9 +61,9 @@ if [ $cpu -gt 0 ]; then
     command="./xengpuminer -m cpu"
     for ((i = 0; i < $cpu; i++)); do
         if [ $i -eq 0 ]; then
-            screen -S "gpuminer" -dm bash -c "$command"
+            screen -S "cpuminer" -dm bash -c "$command"
         else
-            screen -S "gpuminer" -X screen bash -c "$command"
+            screen -S "cpuminer" -X screen bash -c "$command"
         fi
     done
 fi
