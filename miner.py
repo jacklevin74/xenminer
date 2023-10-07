@@ -531,34 +531,37 @@ def monitor_blocks_directory():
         while True:
             if(not running):
                 break
-            BlockDir = f"gpu_found_blocks_tmp/"
-            if not os.path.exists(BlockDir):
-                os.makedirs(BlockDir)
-            for filename in os.listdir(BlockDir):
-                filepath = os.path.join(BlockDir, filename)
-                with open(filepath, 'r') as f:
-                    data = f.read()
-                if(submit_block(data) is not None):
-                    pbar.update(1)
-                os.remove(filepath)
-            superblock = f"{RED}super:{super_blocks_count}{RESET} "
-            block = f"{GREEN}normal:{normal_blocks_count}{RESET} "
-            xuni = f"{BLUE}xuni:{xuni_blocks_count}{RESET} "
-            if(super_blocks_count == 0):
-                superblock = ""
-            if(normal_blocks_count == 0):
-                block = ""
-            if(xuni_blocks_count == 0):
-                xuni = ""
-            if super_blocks_count == 0 and normal_blocks_count == 0 and xuni_blocks_count == 0:
-                pbar.set_postfix({"Stat":f"Active:{BLUE}{active_processes}{RESET}, HashRate:{BLUE}{total_hash_rate:.2f}{RESET}h/s", 
-                                  "Difficulty":f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
-            else:
-                pbar.set_postfix({"Details": f"{superblock}{block}{xuni}", 
-                                  "Stat":f"Active:{BLUE}{active_processes}{RESET}, HashRate:{BLUE}{total_hash_rate:.2f}{RESET}h/s", 
-                                  "Difficulty":f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
+            try:
+                BlockDir = f"gpu_found_blocks_tmp/"
+                if not os.path.exists(BlockDir):
+                    os.makedirs(BlockDir)
+                for filename in os.listdir(BlockDir):
+                    filepath = os.path.join(BlockDir, filename)
+                    with open(filepath, 'r') as f:
+                        data = f.read()
+                    if(submit_block(data) is not None):
+                        pbar.update(1)
+                    os.remove(filepath)
+                superblock = f"{RED}super:{super_blocks_count}{RESET} "
+                block = f"{GREEN}normal:{normal_blocks_count}{RESET} "
+                xuni = f"{BLUE}xuni:{xuni_blocks_count}{RESET} "
+                if(super_blocks_count == 0):
+                    superblock = ""
+                if(normal_blocks_count == 0):
+                    block = ""
+                if(xuni_blocks_count == 0):
+                    xuni = ""
+                if super_blocks_count == 0 and normal_blocks_count == 0 and xuni_blocks_count == 0:
+                    pbar.set_postfix({"Stat":f"Active:{BLUE}{active_processes}{RESET}, HashRate:{BLUE}{total_hash_rate:.2f}{RESET}h/s", 
+                                    "Difficulty":f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
+                else:
+                    pbar.set_postfix({"Details": f"{superblock}{block}{xuni}", 
+                                    "Stat":f"Active:{BLUE}{active_processes}{RESET}, HashRate:{BLUE}{total_hash_rate:.2f}{RESET}h/s", 
+                                    "Difficulty":f"{YELLOW}{memory_cost}{RESET}"}, refresh=True)
 
-            time.sleep(1)
+                time.sleep(1)
+            except Exception as e:
+                print(f"An error occurred while monitoring blocks directory: {e}")
 
 
 if __name__ == "__main__":
