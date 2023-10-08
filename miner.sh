@@ -7,6 +7,7 @@ if [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "
 fi
 
 dev_fee_on=false
+logging_on=false
 opencl=false
 silence=false
 gpus=0
@@ -21,6 +22,7 @@ function display_help() {
     echo "  -d, --devfee, --dev-fee-on    Enable dev fee (Default: off)"
     echo "  -o, --opencl                  Enable OpenCL computation (Default: off)"
     echo "  -s, --silence                 Run in silence/background mode (Default: off)"
+    echo "  -l, --logging-on              Record verified blocks into payload.log file (Default: off)"
     echo "  -h, --help                    Display this help message and exit"
     echo
     echo "Note: Script exits if both GPU and CPU modes are off."
@@ -37,18 +39,20 @@ for arg in "$@"; do
         "--silence") set -- "$@" "-s" ;;
         "--gpus") set -- "$@" "-g" ;;
         "--cpu") set -- "$@" "-c" ;;
+        "--logging-on") set -- "$@" "-l" ;;
          *) set -- "$@" "$arg"
     esac
 done
 
 # Now, process short options with getopts
-while getopts "g:c:dosh" opt; do
+while getopts "g:c:ldosh" opt; do
     case "$opt" in
     g) gpus="$OPTARG" ;;
     c) cpu="$OPTARG" ;;
     d) dev_fee_on=true ;;
     o) opencl=true ;;
     s) silence=true ;;
+    l) logging_on=true ;;
     h) display_help ;;
     *) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
     esac
@@ -90,6 +94,9 @@ fi
 command="python3 miner.py"
 if $dev_fee_on; then
     command+=" --dev-fee-on"
+fi
+if $logging_on; then
+    command+=" --logging-on"
 fi
 if $silence; then
     screen -S submitminer -dm bash -c "$command"
