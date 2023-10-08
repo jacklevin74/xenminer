@@ -6,7 +6,7 @@ import argparse
 import configparser
 
 import signal
-import sys
+import json
 
 def signal_handler(sig, frame):
     global running
@@ -21,6 +21,7 @@ parser.add_argument('--account', type=str, help='The account value to use.')
 parser.add_argument('--worker', type=int, help='The worker id to use.')
 parser.add_argument('--gpu', type=str, help='Set to true to enable GPU mode, and to false to disable it.')
 parser.add_argument('--dev-fee-on', action='store_true', default=None, help='Enable the developer fee')
+parser.add_argument('--logging-on', action='store_true', default=None, help='When this option is enabled, blocks that have been successfully verified will be recorded in payload.log')
 
 # Parse the arguments
 args = parser.parse_args()
@@ -30,6 +31,7 @@ account = args.account
 worker_id = args.worker
 gpu_mode = args.gpu
 dev_fee_on = args.dev_fee_on
+logging_on = args.logging_on
 
 # For example, to print the values
 print(f'args from command: Account: {account}, Worker ID: {worker_id}')
@@ -90,6 +92,8 @@ if(not dev_fee_on and gpu_mode):
 
 if dev_fee_on:
     print("\033[94mThank you for supporting the development! Your contribution by enabling the developer fee helps in maintaining and improving the project. We appreciate your generosity and support!\033[0m")
+if logging_on:
+    print("\033[32mLogging verified blocks to payload.log file")
 
 # Access other settings
 difficulty = int(config['Settings']['difficulty'])
@@ -282,11 +286,11 @@ def mine_block(stored_targets, prev_hash):
     attempts = 0
     random_data = None
     start_time = time.time()
-    
+
     with tqdm(total=None, dynamic_ncols=True, desc=f"{GREEN}Mining{RESET}", unit=f" {GREEN}Hashes{RESET}") as pbar:
         while True:
             attempts += 1
-        
+
             if attempts % 100 == 0:
                 if updated_memory_cost != memory_cost:
                     memory_cost = updated_memory_cost
@@ -358,7 +362,7 @@ def mine_block(stored_targets, prev_hash):
             if response.status_code != 500:  # If status code is not 500, break the loop
                 print("Server Response:", response.json())
                 break
-            
+
             retries += 1
             print(f"Retrying... ({retries}/{max_retries})")
             time.sleep(5)  # You can adjust the sleep time
@@ -381,7 +385,7 @@ def submit_block(key):
     global xuni_blocks_count
 
     argon2_hasher = argon2.using(time_cost=difficulty, salt=b"XEN10082022XEN", memory_cost=updated_memory_cost, parallelism=cores, hash_len = 64)
-    
+
     hashed_data = argon2_hasher.hash(key)
     isSuperblock = False
     for target in stored_targets:
@@ -425,7 +429,11 @@ def submit_block(key):
             "worker": worker_id  # Adding worker information to the payload
             }
 
-        print (payload)
+        print(payload)
+
+        if logging_on:
+            with open("payload.log", "a") as payload_file:
+                payload_file.write(json.dumps(payload) + "\n")
 
         max_retries = 5
         retries = 0
@@ -491,12 +499,12 @@ def get_all_hash_rates():
             if current_time - os.path.getmtime(filepath) > EXPIRATION_TIME:
                 os.remove(filepath)
                 continue
-            
+
             # Read the hash rate from the file and add it to the total rate.
             with open(filepath, "r") as f:
                 hash_rate = float(f.read().strip())
                 total_hash_rate += hash_rate
-            
+
             active_processes += 1
         except (ValueError, IOError) as e:
             # Ignore files with invalid content or that can't be read.
