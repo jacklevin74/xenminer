@@ -163,7 +163,7 @@ $ ./miner.sh
 
 ### Bash Script Usage and Options:
 ``` sh
-$ ./miner.sh -g <num_of_gpus> -c <num_of_cpu_cores> [-d] [-o] [-s] [-h]
+$ ./miner.sh -g <num_of_gpus> -c <num_of_cpu_cores> [-d] [-o] [-s] [-l] [-h]
 ```
 Options:
 ```
@@ -172,6 +172,7 @@ Options:
   -d, --devfee, --dev-fee-on Enable dev fee (Default: off)
   -o, --opencl               Enable OpenCL computation (Default: off)
   -s, --silence              Run in silence/background mode (Default: off)
+  -l, --logging-on           Record verified blocks into payload.log file (Default: off)"
   -h, --help                 Display help message and exit
 ```
 ### Further Assistance:
