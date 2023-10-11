@@ -4,6 +4,7 @@ import sqlite3
 from ethereum.transactions import Transaction
 from ethereum.utils import decode_hex
 import rlp
+from rlp import encode
 from web3 import Web3
 import time
 
@@ -34,6 +35,34 @@ def broadcast_transaction(tx):
     # Broadcast the transaction to the network (this is a placeholder; your broadcast logic goes here)
     # Returning a fake hash for demonstration
     return "0x" + tx.hash.hex()
+
+
+
+def get_xuni_account_count(account_name):
+    # Initialize database connection
+    conn = sqlite3.connect('blocks.db')
+    cursor = conn.cursor()
+
+    try:
+        # Run the SQL query
+        cursor.execute("SELECT COUNT(*) as n FROM xuni WHERE account = ?", (account_name,))
+        data = cursor.fetchone()
+
+        # Close database connection
+        conn.close()
+
+        # Check if data was found
+        if data:
+            return data[0]
+        else:
+            return -1  # can use -1 or another indicator to show that account was not found
+
+    except sqlite3.Error as e:
+        print("Database error:", e)
+        # Close database connection in case of an error
+        conn.close()
+        return -2  # can use -2 or another indicator to show that there was a database error
+
 
 # Function to update the account balances in the super_blocks table
 
@@ -103,6 +132,23 @@ def transfer(from_account, to_account, value):
         raise
 
 
+def get_xblk_account_count(account):
+
+    try:
+
+        conn = sqlite3.connect("cache.db")
+        cursor_cache = conn.cursor()
+
+        cursor_cache.execute("SELECT super_blocks FROM cache_table WHERE LOWER(account) = LOWER(?)", (account,))
+        print ("Account: ", account)
+        row = cursor_cache.fetchone()
+        return row[0] if row else 0
+    except Exception as e:
+        print("Database error:", e)
+        return 0
+    finally:
+        if conn:
+            conn.close()
 
 
 def get_balance_from_db(account):
@@ -129,19 +175,38 @@ def get_balance_from_db(account):
             conn.close()
             conn_cache.close()
 
+def rlp_encode(input_string):
+    if len(input_string) == 1 and ord(input_string) < 0x80:
+        return input_string
+    elif len(input_string) <= 55:
+        return chr(0x80 + len(input_string)) + input_string
+    else:
+        length_of_length = len(str(len(input_string)))
+        return chr(0xb7 + length_of_length) + str(len(input_string)) + input_string
+
+
+
 def handle_eth_call(data):
     print("In handle_eth_call function: ", data)
+    
     # Check if 'data' key exists
     if 'params' not in data or not isinstance(data['params'], list) or len(data['params']) == 0 or 'data' not in data['params'][0]:
         print ("Data missing: ", data)
         response = "0x123456"
+        return response
 
     # Extracting the relevant details from the data
     target_address = data['params'][0]['to'].lower()
 
-    # Checking if the target address matches
-    if target_address != "0x999999cf1046e68e36e1aa2e0e07105eddd00002":
-        response = {
+    # Default names and symbols for different contracts
+    contract_data = {
+        "0x999999cf1046e68e36e1aa2e0e07105eddd00002": {"name": "XUNI Token", "symbol": "XUNI"},
+        "0x999999cf1046e68e36e1aa2e0e07105eddd00001": {"name": "X.BLK Token", "symbol": "X.BLK"}
+    }
+
+    # If the contract address is not recognized
+    if target_address not in contract_data:
+        return {
             "id": data['id'],
             "jsonrpc": "2.0",
             "error": {
@@ -152,34 +217,44 @@ def handle_eth_call(data):
 
     function_data = data['params'][0]['data']
     function_signature = function_data[:10]
-    address = function_data[10:74]
+    address_queried = function_data[10:74]
     print(f"Function Signature: {function_signature}")
 
-    if function_signature == '0x313ce567':
-        # decimals function
-        print("RETURN DECIMALS ")
+    if function_signature == '0x313ce567':  # decimals function
+        print("RETURN DECIMALS")
         decimals = 18
-        response = '0x' + hex(decimals)[2:].zfill(64) 
+        response = '0x' + hex(decimals)[2:].zfill(64)
 
-    elif function_signature == '0x06fdde03':
-        # name function
-        print("RETURN NAME")
-        token_name = "XUNI Token"
-        response = '0x' + token_name.encode().hex()
+    elif function_signature == '0x06fdde03':  # name function
+        token_name = contract_data[target_address]["name"]
+        length_in_hex = hex(len(token_name))[2:].zfill(64)
+        encoded_name = token_name.encode().hex().ljust(64, '0')
+        response = '0x' + '0000000000000000000000000000000000000000000000000000000000000020' + length_in_hex + encoded_name
+        print("RETURN NAME: ", token_name)
 
-    elif function_signature == '0x95d89b41':
-        # symbol function
-        print("RETURN SYMBOL")
-        symbol = "XUNI"
-        response = '0x' + symbol.encode().hex() 
+    elif function_signature == '0x95d89b41':  # symbol function
+        symbol = contract_data[target_address]["symbol"]
+        length_in_hex = hex(len(symbol))[2:].zfill(64)
+        encoded_symbol = symbol.encode().hex().ljust(64, '0')
+        response = '0x' + '0000000000000000000000000000000000000000000000000000000000000020' + length_in_hex + encoded_symbol
+        print("RETURN SYMBOL: ", symbol)
 
-    elif function_signature in ['0x01ffc9a7', '0x70a08231']:
-        # balanceOf function
-        #address_queried = data[24:64].lower()
-        balance = 1000 * 1000000000000000000
-        #print("RETURN BALANCE for: " , address_queried)
-        print("RETURN BALANCE for: ")
-        response = '0x' + hex(balance)[2:].zfill(64) 
+    elif function_signature == '0x70a08231':  # balanceOf function
+        address_queried = function_data[34:74].lower()
+
+        # Depending on the target address, call the appropriate function to get the balance
+        if target_address == "0x999999cf1046e68e36e1aa2e0e07105eddd00002":
+            balance = get_xuni_account_count('0x' + address_queried) * 1000000000000000000
+        elif target_address == "0x999999cf1046e68e36e1aa2e0e07105eddd00001":
+            balance = get_xblk_account_count('0x' + address_queried) * 1000000000000000000
+        else:
+            # Handle unknown contract address or give a default balance
+            balance = 0
+
+        response = '0x' + hex(balance)[2:].zfill(64)
+        print("RETURN BALANCE for: ", address_queried)
+        print("BALANCE is: ", balance)
+
 
     else:
         response = {
@@ -190,8 +265,8 @@ def handle_eth_call(data):
                 "message": "Invalid request"
             }
         }
-        
-    print (response)
+
+    print(response)
     return response
 
 
@@ -303,7 +378,9 @@ def index():
         # Example: Fetch the contract code from your database or some storage.
         # In this example, it's hardcoded.
         contract_code = {
-            '0xdadf7ac7d0622dedd7e58b4d85d3784cc0c9d0e7': '0x606060405260...'
+            '0xdadf7ac7d0622dedd7e58b4d85d3784cc0c9d0e7': '0x606060405260...',
+            '0x999999cf1046e68e36e1aa2e0e07105eddd00002': '0x00002',
+            '0x999999cf1046e68e36e1aa2e0e07105eddd00001': '0x00001'
         }
 
         result = contract_code.get(address, '0x')  # return '0x' if the address is not a contract
