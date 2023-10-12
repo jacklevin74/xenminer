@@ -6,3 +6,5 @@ blockchain.db-journal
 hash_rates/
 .idea
 logs/
+dist/
+miner.spec

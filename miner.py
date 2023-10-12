@@ -183,7 +183,7 @@ def update_memory_cost_periodically():
 def fetch_difficulty_from_server():
     global memory_cost
     try:
-        response = requests.get('http://xenminer.mooo.com/difficulty', timeout=10)
+        response = requests.get('http://xenblocks.io/difficulty', timeout=10)
         response_data = response.json()
         return str(response_data['difficulty'])
     except Exception as e:
@@ -254,8 +254,7 @@ def submit_pow(account_address, key, hash_to_verify):
 
             # Send POST request
             try:
-                pow_response = requests.post('http://xenminer.mooo.com:4446/send_pow', json=payload)
-
+                pow_response = requests.post('http://xenblocks.io:4446/send_pow', json=payload)
                 if pow_response.status_code == 200:
                     print(f"Proof of Work successful: {pow_response.json()}")
                 else:
@@ -348,7 +347,7 @@ def mine_block(stored_targets, prev_hash):
     while retries <= max_retries:
         try:
             # Make the POST request
-            response = requests.post('http://xenminer.mooo.com/verify', json=payload)
+            response = requests.post('http://xenblocks.io/verify', json=payload, timeout=10)
 
             # Print the HTTP status code
             print("HTTP Status Code:", response.status_code)
@@ -441,7 +440,7 @@ def submit_block(key):
         while retries <= max_retries:
             try:
                 # Make the POST request
-                response = requests.post('http://xenminer.mooo.com/verify', json=payload)
+                response = requests.post('http://xenblocks.io/verify', json=payload, timeout=10)
 
                 # Print the HTTP status code
                 print("HTTP Status Code:", response.status_code)
