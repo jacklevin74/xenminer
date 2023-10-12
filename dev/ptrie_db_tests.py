@@ -76,7 +76,7 @@ class AccountManager:
         self.trie = HexaryTrie(self.db, root_hash)
 
 
-
+import time
 if __name__ == "__main__":
     manager = AccountManager('ptrie.db')
 
@@ -86,22 +86,45 @@ if __name__ == "__main__":
         '0xSomeAccount2': 200
     }, 1)
 
+    # Start measuring time for credit_balances loop
+    start_time_credit_balances = time.time()
+
     # Create 100 transactions
-    for i in range(2, 102):  # start from block_id 2 and go up to 101
-        manager.debit_balances({
+    for i in range(2, 100000):
+        manager.credit_balances({
             '0xSomeAccount1': 1,
             '0xSomeAccount2': 1
         }, i)
 
+        # Print progress every 10,000 iterations
+        if i % 10000 == 0:
+            print(f"credit_balances progress: {i}/1000000")
+
+    # Calculate and print the rate for credit_balances loop
+    end_time_credit_balances = time.time()
+    duration_credit_balances = end_time_credit_balances - start_time_credit_balances
+    rate_credit_balances = 1000000 / duration_credit_balances
+    print(f"credit_balances runs per second: {rate_credit_balances:.2f}")
+
+    # Start measuring time for rebuild_trie loop
+    start_time_rebuild_trie = time.time()
+
     # Loop to rebuild the trie for block_ids from 50 to 101 and print the balance for each
-    for i in range(50, 102):
-        # Rebuild trie with the current block_id
+    for i in range(50, 100000):
         manager.rebuild_trie(i)
 
-        # Print the expected balance for both accounts
+        # Print progress every 10,000 iterations
+        if (i - 50) % 10000 == 0:
+            print(f"rebuild_trie progress: {i}/1000000")
+        
         print(f"Balance for block_id {i} (Account1):", manager.get_balance('0xSomeAccount1'))
         print(f"Balance for block_id {i} (Account2):", manager.get_balance('0xSomeAccount2'))
 
+    # Calculate and print the rate for rebuild_trie loop
+    end_time_rebuild_trie = time.time()
+    duration_rebuild_trie = end_time_rebuild_trie - start_time_rebuild_trie
+    rate_rebuild_trie = (1000000 - 50) / duration_rebuild_trie
+    print(f"rebuild_trie runs per second: {rate_rebuild_trie:.2f}")
+
     # Close the db connection
     manager.db.close()
-
