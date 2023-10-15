@@ -333,23 +333,31 @@ def get_block():
 
     if not is_valid_hash(key):
         return jsonify({"error": "Invalid key provided"}), 400
-    
+
     conn = sqlite3.connect('blocks.db')
     cursor = conn.cursor()
-    
+
     # Use a parameterized query to prevent SQL injection
     cursor.execute("SELECT * FROM blocks WHERE key=?", (key,))
     data = cursor.fetchone()
-    
+
     if data is None:
-        return jsonify({"error": "Data not found for provided key"}), 404
-    
-    # Convert the tuple data to a dictionary
+        # No record was found in the 'blocks' table, try 'xuni' table
+        cursor.execute("SELECT * FROM xuni WHERE key=?", (key,))
+        data = cursor.fetchone()
+
+        if data is None:
+            # Record not found in either table
+            return jsonify({"error": "Data not found for provided key"}), 404
+
+    # Column names for both 'blocks' and 'xuni' tables
     columns = ['block_id', 'hash_to_verify', 'key', 'account', 'created_at']
+
+    # Convert the tuple data to a dictionary
     data_dict = dict(zip(columns, data))
-    
+
     conn.close()
-    
+
     return jsonify(data_dict), 200
 
 @app.route('/verify', methods=['POST'])
