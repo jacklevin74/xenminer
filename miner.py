@@ -1,4 +1,6 @@
-import json, requests, time, hashlib, string, threading, re, configparser, os
+import json, requests, time, hashlib, string, threading, re, configparser, os, base64
+import re
+from web3 import Web3
 from passlib.hash import argon2
 from random import choice, randrange
 
@@ -41,6 +43,28 @@ else:
         raise KeyError(f"Missing required settings: {', '.join(missing_keys)}")
 
     account = config['Settings']['account']
+
+def is_valid_ethereum_address(address: str) -> bool:
+    # Check if the address matches the basic hexadecimal pattern
+    if not re.match("^0x[0-9a-fA-F]{40}$", address):
+        return False
+
+    # Check if the address follows EIP-55 checksum encoding
+    try:
+        # If the checksum is correct, it will return True
+        return address == Web3.to_checksum_address(address)
+    except ValueError:
+        # If a ValueError is raised, the checksum is incorrect
+        return False
+
+# Check validity of ethereum address
+
+if is_valid_ethereum_address(account):
+    print("The address is valid.  Starting the miner.")
+else:
+    print("The address is invalid. Correct your account address and try again")
+    exit(0)
+
 
 # Access other settings
 difficulty = int(config['Settings']['difficulty'])
@@ -116,7 +140,7 @@ def update_memory_cost_periodically():
 def fetch_difficulty_from_server():
     global memory_cost
     try:
-        response = requests.get('http://xenminer.mooo.com/difficulty')
+        response = requests.get('http://xenblocks.io/difficulty')
         response_data = response.json()
         return str(response_data['difficulty'])
     except Exception as e:
@@ -186,7 +210,7 @@ def submit_pow(account_address, key, hash_to_verify):
             }
 
             # Send POST request
-            pow_response = requests.post('http://xenminer.mooo.com:4446/send_pow', json=payload)
+            pow_response = requests.post('http://xenblocks.io:4446/send_pow', json=payload)
 
             if pow_response.status_code == 200:
                 print(f"Proof of Work successful: {pow_response.json()}")
@@ -205,12 +229,15 @@ YELLOW = "\033[33m"
 BLUE = "\033[34m"
 RESET = "\033[0m"
 
-def mine_block(stored_targets, prev_hash):
+def mine_block(stored_targets, prev_hash, address):
     global memory_cost  # Make it global so that we can update it
     global updated_memory_cost  # Make it global so that we can receive updates
     found_valid_hash = False
-    #memory_cost=fetch_difficulty_from_server()
-    argon2_hasher = argon2.using(time_cost=difficulty, salt=b"XEN10082022XEN", memory_cost=memory_cost, parallelism=cores, hash_len = 64)
+
+    remove_prefix_address = address[2:]
+    salt = bytes.fromhex(remove_prefix_address)
+
+    argon2_hasher = argon2.using(time_cost=difficulty, salt=salt, memory_cost=memory_cost, parallelism=cores, hash_len = 64)
     attempts = 0
     random_data = None
     start_time = time.time()
@@ -275,7 +302,7 @@ def mine_block(stored_targets, prev_hash):
 
     while retries <= max_retries:
         # Make the POST request
-        response = requests.post('http://xenminer.mooo.com/verify', json=payload)
+        response = requests.post('http://xenblocks.io/verify', json=payload)
 
         # Print the HTTP status code
         print("HTTP Status Code:", response.status_code)
@@ -319,7 +346,7 @@ if __name__ == "__main__":
     i = 1
     while i <= num_blocks_to_mine:
         print(f"Mining block {i}...")
-        result = mine_block(stored_targets, blockchain[-1]['hash'])
+        result = mine_block(stored_targets, blockchain[-1]['hash'], account)
 
         if result is None:
             print(f"{RED}Restarting mining round{RESET}")
