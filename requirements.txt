@@ -1,4 +1,5 @@
 passlib
 requests
 tqdm
-argon2_cffi 
+argon2_cffi
+web3 
