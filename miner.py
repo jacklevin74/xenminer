@@ -1,12 +1,12 @@
-import json, requests, time, hashlib, string, threading, re, configparser, os, base64
-import re
+import json, requests, time, hashlib, string, threading, re, configparser, os, base64, argparse
 from web3 import Web3
 from passlib.hash import argon2
 from random import choice, randrange
 
-import argparse
-import configparser
-
+# Define constants
+DIFFICULTY_URL = 'http://xenblocks.io/difficulty'
+SEND_POW_URL = 'http://xenblocks.io:4446/send_pow'
+VERIFY_URL = 'http://xenblocks.io/verify'
 
 # Set up argument parser
 parser = argparse.ArgumentParser(description="Process optional account and worker arguments.")
@@ -129,7 +129,7 @@ updated_memory_cost = 1500 # just initialize it
 def update_memory_cost_periodically():
     global memory_cost
     global updated_memory_cost
-    time.sleep(10)  # start checking in 10 seconds after launch 
+    time.sleep(10)  # start checking in 10 seconds after launch
     while True:
         updated_memory_cost = fetch_difficulty_from_server()
         if updated_memory_cost != memory_cost:
@@ -140,7 +140,7 @@ def update_memory_cost_periodically():
 def fetch_difficulty_from_server():
     global memory_cost
     try:
-        response = requests.get('http://xenblocks.io/difficulty')
+        response = requests.get(DIFFICULTY_URL)
         response_data = response.json()
         return str(response_data['difficulty'])
     except Exception as e:
@@ -210,7 +210,7 @@ def submit_pow(account_address, key, hash_to_verify):
             }
 
             # Send POST request
-            pow_response = requests.post('http://xenblocks.io:4446/send_pow', json=payload)
+            pow_response = requests.post(SEND_POW_URL, json=payload)
 
             if pow_response.status_code == 200:
                 print(f"Proof of Work successful: {pow_response.json()}")
@@ -241,11 +241,11 @@ def mine_block(stored_targets, prev_hash, address):
     attempts = 0
     random_data = None
     start_time = time.time()
-    
+
     with tqdm(total=None, dynamic_ncols=True, desc=f"{GREEN}Mining{RESET}", unit=f" {GREEN}Hashes{RESET}") as pbar:
         while True:
             attempts += 1
-        
+
             if attempts % 100 == 0:
                 if updated_memory_cost != memory_cost:
                     memory_cost = updated_memory_cost
@@ -302,7 +302,7 @@ def mine_block(stored_targets, prev_hash, address):
 
     while retries <= max_retries:
         # Make the POST request
-        response = requests.post('http://xenblocks.io/verify', json=payload)
+        response = requests.post(VERIFY_URL, json=payload)
 
         # Print the HTTP status code
         print("HTTP Status Code:", response.status_code)
@@ -314,7 +314,7 @@ def mine_block(stored_targets, prev_hash, address):
         if response.status_code != 500:  # If status code is not 500, break the loop
             print("Server Response:", response.json())
             break
-        
+
         retries += 1
         print(f"Retrying... ({retries}/{max_retries})")
         time.sleep(10)  # You can adjust the sleep time
@@ -333,7 +333,7 @@ if __name__ == "__main__":
     blockchain = []
     stored_targets = ['XEN11', 'XUNI']
     num_blocks_to_mine = 20000000
-    
+
     #Start difficulty monitoring thread
     difficulty_thread = threading.Thread(target=update_memory_cost_periodically)
     difficulty_thread.daemon = True  # This makes the thread exit when the main program exits
