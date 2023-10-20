@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify, render_template
 from passlib.hash import argon2
-import sqlite3
+import sqlite3, base64
 from datetime import datetime
 import time
 import re
+from web3 import Web3
 
 app = Flask(__name__)
 
@@ -323,6 +324,52 @@ def check_fourth_element(string):
 def is_valid_hash(h):
     """Ensure the input is a hexadecimal hash of the expected length."""
     return bool(re.match("^[a-fA-F0-9]{64}$", h))
+
+def restore_eip55_address(lowercase_address: str) -> str:
+    # Restore the address using EIP-55 checksum
+    try:
+        checksum_address = Web3.to_checksum_address(lowercase_address)
+        print ("Checksummed address is: ", checksum_address)
+        return True
+    except ValueError as e:
+        # Handle the error in case the address is not a valid Ethereum address
+        print(f"An error occurred: {e}")
+        return False
+
+
+# this handles old salt with full hash_to_very or just salt
+def check_salt_format_and_ethereum_address(salt: str) -> bool:
+    # Regular expressions for the expected patterns
+    pattern1 = re.compile(r'(?:[^$]*\$){3}WEVOMTAwODIwMjJYRU4\$')
+    pattern2 = re.compile(r'^[a-zA-Z0-9+/]+={0,2}$')  # Generic base64 pattern
+
+    # Check if the salt matches the first pattern
+    if pattern1.search(salt):
+        print ("Old Salt matched")
+        return True
+
+    # Check if the salt matches the second pattern and is base64
+    if pattern2.fullmatch(salt):
+        try:
+            # Decode the base64 string
+            decoded_bytes = base64.b64decode(salt)
+            decoded_str = decoded_bytes.hex()
+            print ("Decoded salt: ", decoded_str)
+
+            # Check if the decoded string is a valid hexadecimal and of a specific length
+            if re.fullmatch(r'[0-9a-fA-F]{40}', decoded_str):  # Ethereum addresses are 40 hex characters long
+                # Construct potential Ethereum address
+                potential_eth_address = '0x' + decoded_str
+                print ("Address matched: ", potential_eth_address)
+
+                # Validate Ethereum address checksum
+                if restore_eip55_address(potential_eth_address):
+                    return True
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return False
+
+    return False
 
 
 @app.route('/get_block', methods=['GET'])
