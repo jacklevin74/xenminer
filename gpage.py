@@ -337,33 +337,48 @@ def restore_eip55_address(lowercase_address: str) -> str:
         return False
 
 
-# this handles old salt with full hash_to_very or just salt
-def check_salt_format_and_ethereum_address(salt: str) -> bool:
+def check_salt_format_and_ethereum_address(hash_to_verify: str) -> bool:
     # Regular expressions for the expected patterns
-    pattern1 = re.compile(r'(?:[^$]*\$){3}WEVOMTAwODIwMjJYRU4\$')
-    pattern2 = re.compile(r'^[a-zA-Z0-9+/]+={0,2}$')  # Generic base64 pattern
+    pattern1 = re.compile(r'WEVOMTAwODIwMjJYRU4')
+    pattern2 = re.compile(r'^[A-Za-z0-9+/]{27}$')
+
+    # Extract the salt part from the hash_to_verify
+    parts = hash_to_verify.split("$")
+    if len(parts) != 6:
+        return False
+    salt = parts[4]
 
     # Check if the salt matches the first pattern
     if pattern1.search(salt):
-        print ("Old Salt matched")
+        print ("Matched old salt, continue")
         return True
+    else:
+        print("Old Salt False")
 
     # Check if the salt matches the second pattern and is base64
     if pattern2.fullmatch(salt):
+        print ("In Pattern2 match")
         try:
+            # The proper base64 string should have a length that is a multiple of 4.
+            # We need to add padding if necessary.
+            missing_padding = len(salt) % 4
+            if missing_padding:
+                salt += '=' * (4 - missing_padding)
+
             # Decode the base64 string
             decoded_bytes = base64.b64decode(salt)
             decoded_str = decoded_bytes.hex()
-            print ("Decoded salt: ", decoded_str)
+            print("Decoded salt: ", decoded_str)
 
             # Check if the decoded string is a valid hexadecimal and of a specific length
             if re.fullmatch(r'[0-9a-fA-F]{40}', decoded_str):  # Ethereum addresses are 40 hex characters long
                 # Construct potential Ethereum address
                 potential_eth_address = '0x' + decoded_str
-                print ("Address matched: ", potential_eth_address)
+                print("Address matched: ", potential_eth_address)
 
                 # Validate Ethereum address checksum
                 if restore_eip55_address(potential_eth_address):
+                    print("Checksum of address is valid")
                     return True
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -417,7 +432,7 @@ def verify_hash():
         worker_id = None  # Set worker_id to None if it's not a valid string of 3 characters or less
 
     hash_to_verify = data.get('hash_to_verify')
-    hash_to_verify = hash_to_verify if (hash_to_verify and len(hash_to_verify) <= 140) else None
+    hash_to_verify = hash_to_verify if (hash_to_verify and len(hash_to_verify) <= 150) else None
     is_xuni_present = re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None
     key = data.get('key')
     key = key if (key and len(key) <= 128) else None
@@ -434,7 +449,8 @@ def verify_hash():
     if not is_hexadecimal(key):
         return jsonify({"error": "Invalid key format"}), 400
 
-    if not check_fourth_element(hash_to_verify):
+    #if not check_fourth_element(hash_to_verify):
+    if not check_salt_format_and_ethereum_address(hash_to_verify):
         return jsonify({"error": "Invalid salt format"}), 400
 
     # Check for missing data
@@ -481,8 +497,8 @@ def verify_hash():
         print (error_message, hash_to_verify[-87:])
         return jsonify({"message": error_message}), 401
 
-    if len(hash_to_verify) > 139:
-        error_message = "Length of hash_to_verify should not be greater than 137 characters."
+    if len(hash_to_verify) > 150:
+        error_message = "Length of hash_to_verify should not be greater than 150 characters."
         print (error_message)
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401

@@ -32,9 +32,12 @@ def run_db_operations():
 
             for row in rows:
                 hash_to_verify, account_to_update = row
-                capital_count = sum(1 for char in re.sub('[0-9]', '', hash_to_verify) if char.isupper())
+                last_element = hash_to_verify.split("$")[-1]
+                hash_uppercase_only = ''.join(filter(str.isupper, last_element))
+                capital_count = len(hash_uppercase_only)
+                #capital_count = sum(1 for char in re.sub('[0-9]', '', hash_to_verify) if char.isupper())
 
-                if capital_count >= 65:
+                if capital_count >= 50:
                     super_block_counts[account_to_update] += 1
 
             # Insert all rows in one go
