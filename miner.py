@@ -416,17 +416,25 @@ def submit_block(key, account):
     argon2_hasher = argon2.using(time_cost=difficulty, salt=salt, memory_cost=memory_cost, parallelism=cores, hash_len = 64)
 
     hashed_data = argon2_hasher.hash(key)
+    parts = hashed_data.split("$")
+    if len(parts) > 5:
+        only_hashed_data = parts[5]
+    else:
+        print("Invalid hash format")
+        return None
+    
     isSuperblock = False
     for target in stored_targets:
-        if target in hashed_data[-87:]:
+
+        if target in only_hashed_data:
         # Search for the pattern "XUNI" followed by a digit (0-9)
-            if re.search("XUNI[0-9]", hashed_data) and is_within_five_minutes_of_hour():
+            if re.search("XUNI[0-9]", only_hashed_data) and is_within_five_minutes_of_hour():
                 found_valid_hash = True
                 break
             elif target == "XEN11":
                 found_valid_hash = True
-                capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
-                if capital_count >= 65:
+                capital_count = sum(1 for char in re.sub('[0-9]', '', only_hashed_data) if char.isupper())
+                if capital_count >= 50:
                     isSuperblock = True
                     print(f"{RED}Superblock found{RESET}")
                 break
