@@ -1,5 +1,6 @@
 import sqlite3
 from trie import HexaryTrie
+import rlp
 
 class SQLiteDB:
     def __init__(self, db_path):
@@ -46,13 +47,20 @@ class AccountManager:
     def set_balances(self, balances, block_id):
         for account, balance in balances.items():
             key = account.encode()
-            value = str(balance).encode()
-            self.trie[key] = value
+            # Here we're encoding the balance as an RLP item before storing it
+            encoded_balance = rlp.encode(balance)
+            self.trie[key] = encoded_balance
         self.db.set_root_hash(block_id, self.trie.root_hash)
 
     def get_balance(self, account):
         key = account.encode()
-        return int(self.trie.get(key) or b'0')
+        encoded_balance = self.trie.get(key)
+        if encoded_balance:
+            # If we find an encoded balance, decode it
+            balance = rlp.decode(encoded_balance, sedes=rlp.sedes.big_endian_int)
+            return balance
+        else:
+            return 0  # Return a default balance of 0 if no balance found
 
     def credit_balances(self, credits, block_id):
         new_balances = {}
@@ -70,11 +78,9 @@ class AccountManager:
             new_balances[account] = balance - amount
         self.set_balances(new_balances, block_id)
 
-
     def rebuild_trie(self, block_id):
         root_hash = self.db.get_root_hash(block_id)
         self.trie = HexaryTrie(self.db, root_hash)
-
 
 import time
 if __name__ == "__main__":

@@ -1,4 +1,6 @@
-import json, requests, time, hashlib, string, threading, re, configparser, os
+import json, requests, time, hashlib, string, threading, configparser, os, base64
+import re, argparse, configparser
+from web3 import Web3
 from passlib.hash import argon2
 from random import choice, randrange
 
@@ -94,6 +96,28 @@ if dev_fee_on:
     print("\033[94mThank you for supporting the development! Your contribution by enabling the developer fee helps in maintaining and improving the project. We appreciate your generosity and support!\033[0m")
 if logging_on:
     print("\033[32mLogging verified blocks to payload.log file")
+
+def is_valid_ethereum_address(address: str) -> bool:
+    # Check if the address matches the basic hexadecimal pattern
+    if not re.match("^0x[0-9a-fA-F]{40}$", address):
+        return False
+
+    # Check if the address follows EIP-55 checksum encoding
+    try:
+        # If the checksum is correct, it will return True
+        return address == Web3.to_checksum_address(address)
+    except ValueError:
+        # If a ValueError is raised, the checksum is incorrect
+        return False
+
+# Check validity of ethereum address
+
+if is_valid_ethereum_address(account):
+    print("The address is valid.  Starting the miner.")
+else:
+    print("The address is invalid. Correct your account address and try again")
+    exit(0)
+
 
 # Access other settings
 difficulty = int(config['Settings']['difficulty'])
@@ -276,12 +300,15 @@ YELLOW = "\033[33m"
 BLUE = "\033[34m"
 RESET = "\033[0m"
 
-def mine_block(stored_targets, prev_hash):
+def mine_block(stored_targets, prev_hash, address):
     global memory_cost  # Make it global so that we can update it
     global updated_memory_cost  # Make it global so that we can receive updates
     found_valid_hash = False
-    #memory_cost=fetch_difficulty_from_server()
-    argon2_hasher = argon2.using(time_cost=difficulty, salt=b"XEN10082022XEN", memory_cost=memory_cost, parallelism=cores, hash_len = 64)
+
+    remove_prefix_address = address[2:]
+    salt = bytes.fromhex(remove_prefix_address)
+
+    argon2_hasher = argon2.using(time_cost=difficulty, salt=salt, memory_cost=memory_cost, parallelism=cores, hash_len = 64)
     attempts = 0
     random_data = None
     start_time = time.time()
@@ -375,7 +402,7 @@ def mine_block(stored_targets, prev_hash):
 normal_blocks_count = 0
 super_blocks_count = 0
 xuni_blocks_count = 0
-def submit_block(key):
+def submit_block(key, account):
     global updated_memory_cost  # Make it global so that we can update it
     found_valid_hash = False
 
@@ -383,7 +410,10 @@ def submit_block(key):
     global super_blocks_count
     global xuni_blocks_count
 
-    argon2_hasher = argon2.using(time_cost=difficulty, salt=b"XEN10082022XEN", memory_cost=updated_memory_cost, parallelism=cores, hash_len = 64)
+    remove_prefix_address = account[2:]
+    salt = bytes.fromhex(remove_prefix_address)
+
+    argon2_hasher = argon2.using(time_cost=difficulty, salt=salt, memory_cost=memory_cost, parallelism=cores, hash_len = 64)
 
     hashed_data = argon2_hasher.hash(key)
     isSuperblock = False
@@ -526,7 +556,7 @@ def monitor_hash_rate():
         total_hash_rate, active_processes = get_all_hash_rates()
         time.sleep(1)
 
-def monitor_blocks_directory():
+def monitor_blocks_directory(account):
     global normal_blocks_count
     global super_blocks_count
     global xuni_blocks_count
@@ -546,7 +576,7 @@ def monitor_blocks_directory():
                     filepath = os.path.join(BlockDir, filename)
                     with open(filepath, 'r') as f:
                         data = f.read()
-                    if(submit_block(data) is not None):
+                    if(submit_block(data, account) is not None):
                         pbar.update(1)
                     os.remove(filepath)
                 superblock = f"{RED}super:{super_blocks_count}{RESET} "
@@ -614,7 +644,7 @@ if __name__ == "__main__":
         i = 1
         while i <= num_blocks_to_mine:
             print(f"Mining block {i}...")
-            result = mine_block(stored_targets, blockchain[-1]['hash'])
+            result = mine_block(stored_targets, blockchain[-1]['hash'], account)
             if not running:
                 break
             if result is None:

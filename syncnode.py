@@ -1,5 +1,6 @@
 import sqlite3
 import sys
+import signal
 import argparse
 import requests
 from passlib.hash import argon2
@@ -26,7 +27,6 @@ my_ethereum_address = args.ethereum_address
 # Set the verify flag as a global variable
 global verify_flag
 verify_flag = args.verify
-
 
 def hash_value(value):
     return hashlib.sha256(value.encode()).hexdigest()
@@ -84,7 +84,75 @@ def get_total_blocks():
 
     return None
 
+def verify_block_hashes():
+    conn = sqlite3.connect('blockchain.db')
+    c = conn.cursor()
+    c.execute('SELECT id, timestamp, prev_hash, merkle_root, block_hash, records_json FROM blockchain ORDER BY id')
+
+    prev_hash = 'genesis'  # Initialize with genesis hash
+    for row in c.fetchall():
+        id, timestamp, prev_hash_db, merkle_root, block_hash, records_json = row
+
+        # Verify block hash
+        block_contents = str(prev_hash) + str(merkle_root)
+        computed_block_hash = hash_value(block_contents)
+        if computed_block_hash != block_hash:
+            print(f"Block {id} is invalid. Computed hash doesn't match the stored hash.")
+            return False
+
+        # Verify Merkle root and Argon2 hashes
+        records = json.loads(records_json)
+        if len(records) < 100:
+            print ("Blockchain is corrupted at block {id}")
+            return False
+        verified_hashes = []
+        for record in records:
+            hash_to_verify = record.get("hash_to_verify")
+            #records_block_id = record.get('block_id')
+            records_block_id = record.get('xuni_id') if 'xuni_id' in record else record.get('block_id')
+            key = record.get("key")
+            account = record.get("account")
+
+            if verify_flag:
+                if argon2.verify(key, hash_to_verify):
+                    verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
+                else:
+                    print ("Key and hash_to_verify fail argon2 verification ", key, hash_to_verify)
+                    return False
+            else:
+                verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
+
+
+
+        if verified_hashes:
+            computed_merkle_root, _ = build_merkle_tree(verified_hashes)
+            if computed_merkle_root != merkle_root:
+                print(f"Block {id} is invalid. Computed Merkle root doesn't match the stored Merkle root.")
+                return False
+            else:
+                print (f"Block {id} is valid. Computed Merkle root match the stored Merkle root.")
+
+        # Set prev_hash for the next iteration
+        prev_hash = block_hash
+
+    print("All blocks are valid.")
+
+
+    return True
+
 conn = sqlite3.connect('blockchain.db')
+
+# Ctrl+C handler, saves the blockchain before exiting
+def signal_handler(sig, frame):
+    print('You pressed Ctrl+C!')
+    conn.close()
+    verify_block_hashes()
+    validate()
+    sys.exit(0)
+
+# initialize the signal handler
+signal.signal(signal.SIGINT, signal_handler)
+
 c = conn.cursor()
 
 # Create blockchain table
@@ -182,72 +250,12 @@ for block_id in range(last_block_id + 1, end_block_id + 1):
             
             # Increment the counter
             counter += 1
-            
-            # Commit every 10 blocks
-            if counter % 1 == 3:
-                conn.commit()
-                #print(f"Committed {counter} blocks to the database.")
+            conn.commit()
+
                 
 # Commit any remaining blocks that were not committed inside the loop
 conn.commit()
 conn.close()
-
-
-def verify_block_hashes():
-    conn = sqlite3.connect('blockchain.db')
-    c = conn.cursor()
-    c.execute('SELECT id, timestamp, prev_hash, merkle_root, block_hash, records_json FROM blockchain ORDER BY id')
-
-    prev_hash = 'genesis'  # Initialize with genesis hash
-    for row in c.fetchall():
-        id, timestamp, prev_hash_db, merkle_root, block_hash, records_json = row
-
-        # Verify block hash
-        block_contents = str(prev_hash) + str(merkle_root)
-        computed_block_hash = hash_value(block_contents)
-        if computed_block_hash != block_hash:
-            print(f"Block {id} is invalid. Computed hash doesn't match the stored hash.")
-            return False
-
-        # Verify Merkle root and Argon2 hashes
-        records = json.loads(records_json)
-        if len(records) < 100: 
-            print ("Blockchain is corrupted at block {id}")
-            return False
-        verified_hashes = []
-        for record in records:
-            hash_to_verify = record.get("hash_to_verify")
-            #records_block_id = record.get('block_id')
-            records_block_id = record.get('xuni_id') if 'xuni_id' in record else record.get('block_id')
-            key = record.get("key")
-            account = record.get("account")
-
-            if verify_flag:
-                if argon2.verify(key, hash_to_verify):
-                    verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
-                else:
-                    print ("Key and hash_to_verify fail argon2 verification ", key, hash_to_verify)
-                    return False
-            else:
-                verified_hashes.append(hash_value(str(records_block_id) + hash_to_verify + key + account))
-
-
-
-        if verified_hashes:
-            computed_merkle_root, _ = build_merkle_tree(verified_hashes)
-            if computed_merkle_root != merkle_root:
-                print(f"Block {id} is invalid. Computed Merkle root doesn't match the stored Merkle root.")
-                return False
-            else:
-                print (f"Block {id} is valid. Computed Merkle root match the stored Merkle root.")
-
-        # Set prev_hash for the next iteration
-        prev_hash = block_hash
-
-    print("All blocks are valid.")
-
-
-    return True
 
 # Call verify_block_hashes after your existing code
 #verify_block_hashes()
