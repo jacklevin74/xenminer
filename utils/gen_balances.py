@@ -3,6 +3,7 @@ import json
 import re
 import cProfile
 import os
+from hash_table import generate_chained_hash
 
 CHECKPOINT_FILE = 'balances_checkpoint'
 
@@ -75,9 +76,14 @@ def check_and_credit_for_capital_count(hash_to_verify, account_to_update, accoun
     hash_uppercase_only = ''.join(filter(str.isupper, hash_to_verify))
 
     # If the length of the remaining string is 65 or more, it means we have at least 65 uppercase letters.
-    if len(hash_uppercase_only) >= 65:
+    if len(hash_uppercase_only) >= 50:
         account_manager.credit_balance(account_to_update, 3, 1)  # 3 for X.BLK
 
+
+# Function to log output to a file.
+def log_to_file(content, filename='output.log'):
+    with open(filename, 'a') as f:  # Open the file in append mode.
+        f.write(content + "\n")  # Write the content to the file.
 
 def generate_superblock_report(db_path, balances_db_path):
     conn = sqlite3.connect(db_path)
@@ -109,7 +115,7 @@ def generate_superblock_report(db_path, balances_db_path):
                     hash_to_verify = record.get('hash_to_verify')
                     account_to_update = record.get('account')
 
-                    if hash_to_verify and 'WEVOMTAwODIwMjJYRU4' in hash_to_verify:
+                    if hash_to_verify:
                         if 'XUNI' in hash_to_verify or bool(re.search('XUNI[0-9]', hash_to_verify)):
                             account_manager.credit_balance(account_to_update, 2, 1)  # 2 for XUNI
                         elif 'XEN' in hash_to_verify or 'XEN1' in hash_to_verify or 'XEN11' in hash_to_verify:
@@ -121,9 +127,12 @@ def generate_superblock_report(db_path, balances_db_path):
 
             block_counter += 1
 
-            if block_counter % 1000 == 0:  # Save to DB at intervals
-                account_manager.save_balances_to_db()
-                print(f"Processed {block_counter} blocks")
+            #if block_counter % 5000 == 0:  # Save to DB at intervals
+        account_manager.save_balances_to_db()
+        hash_checkpoint = generate_chained_hash()
+        print(hash_checkpoint)
+        print(f"Processed {block_counter} blocks")
+        log_to_file (str(block_counter)+":"+hash_checkpoint)
 
     # Save any remaining balances at the end
     account_manager.save_balances_to_db()
@@ -136,9 +145,5 @@ def main():
     generate_superblock_report('blockchain.db', 'balances.db')
 
 if __name__ == '__main__':
-    profiler = cProfile.Profile()
-    profiler.enable()  # start profiling
     main()
-    profiler.disable()  # end profiling
-    profiler.print_stats(sort='time')
 

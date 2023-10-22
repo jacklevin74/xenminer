@@ -69,4 +69,7 @@ hash_to_verify = "$argon2id$v=19$m=67400,t=1,p=1$WEVOMTAwODIwMjJYRU4$CiW038mdwhk
 print(check_salt_format_and_ethereum_address(hash_to_verify))  # True if it's a valid Ethereum address with a valid checksum
 hash_to_verify = "$argon2id$v=19$m=1500,t=1,p=1$QkShdDvVej2+KqeRSqCih0N6Dvs$At03JjGusrxCib4ejiGJ6Boziavjp9l7uWF+2Hb1CWmvXENxUNlBCxAXW8nBmW466h4iZzjYgNuiEtytCF+roA"
 print(check_salt_format_and_ethereum_address(hash_to_verify))  # True if it's a valid Ethereum address with a valid checksum
-
+hash_to_verify = "$argon2id$v=19$m=67400,t=1,p=1$y/21bUKjJM6hHEHRh3I6bV6GCe4$h5kZ8qppu/aoEhReGqZ9eHczijaX0Qzak/hBS1ebUpm/BhTqXioycU5wQYFyCd9kyviA5b3QrelckYmSjrZygA"
+print(check_salt_format_and_ethereum_address(hash_to_verify))  # True if it's a valid Ethereum address with a valid checksum
+hash_to_verify = "$argon2id$v=19$m=67400,t=1,p=1$y/21bUKjJM6hHEHRh3I6bV6GCe4$yV2iuEo42Gy7FkQNAjtODA72sSsqW4I1zaibZbqmLu8BuUW3EKphUyQITh8zXUNI3JF1STxDeCa+pJAJbVSmTw"
+print(check_salt_format_and_ethereum_address(hash_to_verify))  # True if it's a valid Ethereum address with a valid checksum
