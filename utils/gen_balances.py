@@ -73,8 +73,9 @@ class SQLiteAccountManager:
 
 def check_and_credit_for_capital_count(hash_to_verify, account_to_update, account_manager):
     # Remove all lowercase characters from the string
-    hash_uppercase_only = ''.join(filter(str.isupper, hash_to_verify))
 
+    last_element = hash_to_verify.split("$")[-1]
+    hash_uppercase_only = ''.join(filter(str.isupper, last_element))
     # If the length of the remaining string is 65 or more, it means we have at least 65 uppercase letters.
     if len(hash_uppercase_only) >= 50:
         account_manager.credit_balance(account_to_update, 3, 1)  # 3 for X.BLK
