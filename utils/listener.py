@@ -47,7 +47,7 @@ async def process_data(message):
 
     with sqlite3.connect(DATABASE_NAME) as conn:
         conn.execute(
-            "INSERT INTO blocks (block_id, hash_to_verify, key, account, created_at) VALUES (?, ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO blocks (block_id, hash_to_verify, key, account, created_at) VALUES (?, ?, ?, ?, ?)",
             (block_id, hash_to_verify, key, account, created_at)
         )
         conn.commit()
