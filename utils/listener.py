@@ -78,7 +78,10 @@ async def send_hello_messages(websocket):
 
 # Main coroutine
 async def main():
+    global ready_flag
     while True:
+        ready_flag = False  # Reset the ready flag each time before connecting
+        pong_count = 0      # Reset the pong count as well
         try:
             async with websockets.connect('ws://xenblocks.io:6667') as websocket:
                 print("Connected to the server!")
@@ -88,6 +91,7 @@ async def main():
         except Exception as e:
             print(f"Connection error: {e}. Reconnecting in 5 seconds...")
             await asyncio.sleep(5)
+
 
 # Initialize the database
 init_db()
