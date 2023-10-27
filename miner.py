@@ -261,8 +261,9 @@ def mine_block(stored_targets, prev_hash, address):
                         break
                     elif target == "XEN11":
                         found_valid_hash = True
-                        capital_count = sum(1 for char in re.sub('[0-9]', '', hashed_data) if char.isupper())
-                        if capital_count >= 65:
+                        last_element = hash_data.split("$")[-1]
+                        hash_uppercase_only = ''.join(filter(str.isupper, last_element))
+                        if len(hash_uppercase_only) >= 50:
                             print(f"{RED}Superblock found{RESET}")
                         break
                     else:
@@ -291,6 +292,12 @@ def mine_block(stored_targets, prev_hash, address):
         "hashes_per_second": hashes_per_second,
         "worker": worker_id  # Adding worker information to the payload
     }
+
+    # Append the string to a log file
+    log_file = 'log_blocks.log'  # replace with your log file's path
+
+    with open(log_file, 'a') as file:  # 'a' means append mode
+        file.write(payload + '\n')
 
     print (payload)
 
