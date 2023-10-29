@@ -1,12 +1,13 @@
 import asyncio
 import websockets
 import zlib
+from datetime import datetime
 import time
 import hashlib
 import sqlite3
-from datetime import datetime
 
 DATABASE_NAME = 'blocks.db'
+ready_flag = False
 
 # Initialize the database
 def init_db():
@@ -28,36 +29,18 @@ def compute_truncated_sha256(s):
     truncated_hash = sha256_hash[:5]
     return truncated_hash
 
-# Global variable for cumulative hash
-cumulative_hash = ""
-hash_counter = 0
-
 # Process the received data
-async def process_data(websocket, message, next_starting_id):
-    global cumulative_hash, hash_counter
+async def process_data(message):
     decompressed_data = zlib.decompress(message).decode('utf-8')
     parts = decompressed_data.split('|')
 
     block_id, hash_to_verify, key, account, created_at, timestamp_str = parts
-    block_id_int = int(block_id)
-
     timestamp_int = int(timestamp_str)
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     local_timestamp = int(time.time() * 1000)
     timestamp_diff = local_timestamp - timestamp_int
     hash = compute_truncated_sha256(decompressed_data)
-    print(f"{timestamp}: diff: {timestamp_diff} ms block_id: {block_id} {hash}")
-
-    if next_starting_id is not None and block_id_int >= next_starting_id:
-        cumulative_hash = compute_truncated_sha256(cumulative_hash + hash)
-        hash_counter += 1
-
-        if hash_counter == 30:
-            start_range_id = block_id_int - 29
-            print(f"Cumulative Hash for range {start_range_id}-{block_id}: {cumulative_hash}")
-            #await websocket.send(f"CP:{cumulative_hash}")
-            cumulative_hash = ""
-            hash_counter = 0
+    print(datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f') + " diff: " + str(timestamp_diff) + f" ms block_id: {block_id} " + hash)
 
     with open("websocket_data.txt", "a") as file:
         file.write(f"{timestamp}: {decompressed_data}\n")
@@ -71,54 +54,48 @@ async def process_data(websocket, message, next_starting_id):
 
 # WebSocket reader coroutine
 async def websocket_reader(websocket):
-    pong_wait = True
-    next_starting_id = None
+    global ready_flag
+    pong_count = 0
 
-    while pong_wait or next_starting_id is not None:
+    while True:
         message = await websocket.recv()
 
         if message == "Pong":
-            if pong_wait:
-                print("Received: Pong")
-                if len([_async for _async in asyncio.all_tasks() if _async.get_name() == "hello_task"]) < 5:
-                    continue
-                else:
-                    pong_wait = False
-                    print("Server is ready for transmission!")
+            pong_count += 1
+            print("Received: Pong")
+            if pong_count == 5:
+                ready_flag = True
+                print("Server is ready for transmission!")
         else:
-            decomp_data = zlib.decompress(message).decode('utf-8')
-            if decomp_data.startswith("CP:"):
-                _, range_info = decomp_data.split(":", 1)
-                start_id, end_id = map(int, range_info.split('-'))
-                print(f"Received checkpoint for range {start_id}-{end_id}")
-                next_starting_id = end_id + 1
-            else:    
-                await process_data(websocket, message, next_starting_id)
+            if ready_flag:
+                await process_data(message)
 
 # Sending "Hello" messages
 async def send_hello_messages(websocket):
-    hello_count = 0
-    while hello_count < 5:
+    while not ready_flag:
         await websocket.send("Hello")
-        hello_count += 1
         await asyncio.sleep(1)
 
 # Main coroutine
 async def main():
+    global ready_flag
     while True:
+        ready_flag = False  # Reset the ready flag each time before connecting
+        pong_count = 0      # Reset the pong count as well
         try:
             async with websockets.connect('ws://xenblocks.io:6667') as websocket:
                 print("Connected to the server!")
-                reader_task = asyncio.create_task(websocket_reader(websocket), name="reader_task")
-                hello_task = asyncio.create_task(send_hello_messages(websocket), name="hello_task")
+                reader_task = asyncio.create_task(websocket_reader(websocket))
+                hello_task = asyncio.create_task(send_hello_messages(websocket))
                 await asyncio.gather(reader_task, hello_task)
         except Exception as e:
             print(f"Connection error: {e}. Reconnecting in 5 seconds...")
             await asyncio.sleep(5)
 
+
 # Initialize the database
 init_db()
 
 # Run the main coroutine
-asyncio.run(main())
+asyncio.get_event_loop().run_until_complete(main())
 
