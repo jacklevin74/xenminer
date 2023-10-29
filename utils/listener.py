@@ -107,7 +107,7 @@ async def send_hello_messages(websocket):
 async def main():
     while True:
         try:
-            async with websockets.connect('ws://xenblocks.io:6668') as websocket:
+            async with websockets.connect('ws://xenblocks.io:6667') as websocket:
                 print("Connected to the server!")
                 reader_task = asyncio.create_task(websocket_reader(websocket), name="reader_task")
                 hello_task = asyncio.create_task(send_hello_messages(websocket), name="hello_task")
