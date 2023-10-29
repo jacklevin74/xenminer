@@ -40,7 +40,7 @@ async def process_data(message):
     local_timestamp = int(time.time() * 1000)
     timestamp_diff = local_timestamp - timestamp_int
     hash = compute_truncated_sha256(decompressed_data)
-    print(datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f') + " diff: " + str(timestamp_diff) + " ms " + hash)
+    print(datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f') + " diff: " + str(timestamp_diff) + f" ms block_id: {block_id} " + hash)
 
     with open("websocket_data.txt", "a") as file:
         file.write(f"{timestamp}: {decompressed_data}\n")
