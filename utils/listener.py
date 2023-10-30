@@ -5,9 +5,12 @@ from datetime import datetime
 import time
 import hashlib
 import sqlite3
+import json
 
 DATABASE_NAME = 'blocks.db'
 ready_flag = False
+
+response_queue = asyncio.Queue()
 
 # Initialize the database
 def init_db():
@@ -29,6 +32,14 @@ def compute_truncated_sha256(s):
     truncated_hash = sha256_hash[:5]
     return truncated_hash
 
+
+async def send_responses(websocket):
+    while True:
+        response_data = await response_queue.get()
+        await websocket.send(response_data)
+        response_queue.task_done()
+
+
 # Process the received data
 async def process_data(message):
     decompressed_data = zlib.decompress(message).decode('utf-8')
@@ -40,6 +51,11 @@ async def process_data(message):
     local_timestamp = int(time.time() * 1000)
     timestamp_diff = local_timestamp - timestamp_int
     hash = compute_truncated_sha256(decompressed_data)
+
+    # Send response back through the same WebSocket
+    response_data = {"block_id": block_id, "hash": hash, "time_diff": timestamp_diff}
+    await response_queue.put(json.dumps(response_data))
+
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f') + " diff: " + str(timestamp_diff) + f" ms block_id: {block_id} " + hash)
 
     with open("websocket_data.txt", "a") as file:
@@ -86,8 +102,10 @@ async def main():
             async with websockets.connect('ws://xenblocks.io:6667') as websocket:
                 print("Connected to the server!")
                 reader_task = asyncio.create_task(websocket_reader(websocket))
+                sender_task = asyncio.create_task(send_responses(websocket))
                 hello_task = asyncio.create_task(send_hello_messages(websocket))
-                await asyncio.gather(reader_task, hello_task)
+
+                await asyncio.gather(reader_task, sender_task, hello_task)
         except Exception as e:
             print(f"Connection error: {e}. Reconnecting in 5 seconds...")
             await asyncio.sleep(5)
