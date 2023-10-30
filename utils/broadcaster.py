@@ -101,9 +101,6 @@ async def query_data():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     cursor = conn.cursor()
 
-    hash_counter = 0
-    cumulative_hash = ""
-
     while True:
         cursor.execute("SELECT block_id, hash_to_verify, key, account, created_at FROM blocks WHERE block_id > ?", (last_processed_id,))
         rows = cursor.fetchall()
@@ -118,16 +115,6 @@ async def query_data():
                 await message_queues[ip].put(whole_row)
 
             last_processed_id = id
-
-            cumulative_hash = compute_truncated_sha256(cumulative_hash + hash)
-            hash_counter += 1
-
-            # Every 30th hash, reset and notify
-            if hash_counter == 30:
-                print(f"Cumulative Hash for range {id-29}-{id}: {cumulative_hash}")
-                hash_counter = 0
-                cumulative_hash = ""
-
             print("Total Nodes Connected: ", len(connected_clients))
 
         if rows:
@@ -141,7 +128,7 @@ init_db()
 
 async def start_server():
     # Start the WebSocket server
-    async with websockets.serve(server_handler, "0.0.0.0", 6668, max_size=None, ping_interval=None) as server:
+    async with websockets.serve(server_handler, "0.0.0.0", 6667, max_size=None, ping_interval=None) as server:
         print_task = asyncio.create_task(print_error_counters_periodically())
         query_task = asyncio.create_task(query_data())
 
