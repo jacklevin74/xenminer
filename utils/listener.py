@@ -6,6 +6,8 @@ import time
 import hashlib
 import sqlite3
 import json
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from collections import deque
 
 # Initialize a deque with a fixed size of 10
@@ -18,8 +20,6 @@ response_queue = asyncio.Queue()
 # Function to store the message in the deque
 def store_message(message):
     recent_messages.append(message)
-
-
 
 # Initialize the database
 def init_db():
@@ -41,6 +41,14 @@ def compute_truncated_sha256(s):
     truncated_hash = sha256_hash[:5]
     return truncated_hash
 
+# Function to verify the hash with Argon2
+def verify_argon2id_hash(hashed_data, key):
+    ph = PasswordHasher()
+    try:
+        ph.verify(hashed_data, key)
+        return True
+    except VerifyMismatchError:
+        return False
 
 async def send_responses(websocket):
     while True:
@@ -52,17 +60,23 @@ async def send_responses(websocket):
 # Process the received data
 async def process_data(message):
     decompressed_data = zlib.decompress(message).decode('utf-8')
-    store_message(decompressed_data)
 
     parts = decompressed_data.split('|')
 
     block_id, hash_to_verify, key, account, created_at, timestamp_str = parts
+    # Verify the hash with Argon2
+    #is_valid_hash = verify_argon2id_hash(hash_to_verify, key)
+    #if not is_valid_hash:
+    #    print(f"Invalid hash for block ID: {block_id}")
+    #    return  # Or handle invalid hash case as needed
+
     timestamp_int = int(timestamp_str)
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     local_timestamp = int(time.time() * 1000)
     timestamp_diff = local_timestamp - timestamp_int
     hash = compute_truncated_sha256(decompressed_data)
 
+    store_message(decompressed_data)
     # Send response back through the same WebSocket
     response_data = {"block_id": block_id, "hash": hash, "time_diff": timestamp_diff}
     await response_queue.put(json.dumps(response_data))
