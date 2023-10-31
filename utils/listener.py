@@ -100,30 +100,9 @@ async def websocket_reader(websocket):
     pong_count = 0
 
     while True:
-
-        if websocket.closed:
-            ready_flag = False
-            print("Connection lost. Resetting ready_flag.")
-
         message = await websocket.recv()
+        await process_data(message)
 
-        if message == "Pong":
-            pong_count += 1
-            print("Received: Pong")
-            if pong_count >= 5:
-                ready_flag = True
-                print("Server is ready for transmission!")
-        else:
-            if ready_flag:
-                await process_data(message)
-
-# Sending "Hello" messages
-async def send_hello_messages(websocket):
-    while not ready_flag:
-    #while True:
-        print ("Hello")
-        await websocket.send("Hello")
-        await asyncio.sleep(1)
 
 async def echo(websocket, path):
     print ("Starting echo server")
@@ -146,13 +125,12 @@ async def main():
     while True:
         pong_count = 0      # Reset the pong count as well
         try:
-            async with websockets.connect('ws://xenblocks.io:6667') as websocket:
+            async with websockets.connect('ws://xenblocks.io:6668') as websocket:
                 print("Connected to the server!")
                 reader_task = asyncio.create_task(websocket_reader(websocket))
                 sender_task = asyncio.create_task(send_responses(websocket))
-                hello_task = asyncio.create_task(send_hello_messages(websocket))
 
-                await asyncio.gather(reader_task, sender_task, hello_task, server_task)
+                await asyncio.gather(reader_task, sender_task, server_task)
         except Exception as e:
             ready_flag = False  # Reset the ready flag each time before connecting
             print(f"Connection error: {e}. Reconnecting in 5 seconds...")

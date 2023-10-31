@@ -18,7 +18,7 @@ def verify_argon2id_hash(hashed_data, key):
 recent_block_ids = deque(maxlen=100)
 
 async def get_data():
-    uri = "ws://0.0.0.0:8765"
+    uri = "ws://186.233.186.56:8765"
     while True:
         try:
             async with websockets.connect(uri) as websocket:
