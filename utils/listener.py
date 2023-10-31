@@ -6,11 +6,20 @@ import time
 import hashlib
 import sqlite3
 import json
+from collections import deque
+
+# Initialize a deque with a fixed size of 10
+recent_messages = deque(maxlen=10)
 
 DATABASE_NAME = 'blocks.db'
 ready_flag = False
 
 response_queue = asyncio.Queue()
+# Function to store the message in the deque
+def store_message(message):
+    recent_messages.append(message)
+
+
 
 # Initialize the database
 def init_db():
@@ -43,6 +52,8 @@ async def send_responses(websocket):
 # Process the received data
 async def process_data(message):
     decompressed_data = zlib.decompress(message).decode('utf-8')
+    store_message(decompressed_data)
+
     parts = decompressed_data.split('|')
 
     block_id, hash_to_verify, key, account, created_at, timestamp_str = parts
@@ -95,13 +106,29 @@ async def websocket_reader(websocket):
 # Sending "Hello" messages
 async def send_hello_messages(websocket):
     while not ready_flag:
+    #while True:
         print ("Hello")
         await websocket.send("Hello")
         await asyncio.sleep(1)
 
+async def echo(websocket, path):
+    print ("Starting echo server")
+    async for message in websocket:
+        if message == "request":
+            # Convert deque to a list and then to a JSON string
+            json_data = json.dumps(list(recent_messages))
+            await websocket.send(json_data)
+
+
+# Start the server
+async def start_server():
+    async with websockets.serve(echo, "0.0.0.0", 8765):  # Use your desired port here
+        await asyncio.Future()  # This will run forever
+
 # Main coroutine
 async def main():
     global ready_flag
+    server_task = asyncio.create_task(start_server())
     while True:
         pong_count = 0      # Reset the pong count as well
         try:
@@ -111,7 +138,7 @@ async def main():
                 sender_task = asyncio.create_task(send_responses(websocket))
                 hello_task = asyncio.create_task(send_hello_messages(websocket))
 
-                await asyncio.gather(reader_task, sender_task, hello_task)
+                await asyncio.gather(reader_task, sender_task, hello_task, server_task)
         except Exception as e:
             ready_flag = False  # Reset the ready flag each time before connecting
             print(f"Connection error: {e}. Reconnecting in 5 seconds...")
