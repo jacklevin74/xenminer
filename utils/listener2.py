@@ -23,39 +23,6 @@ response_queue = asyncio.Queue()
 DATABASE_NAME = 'blocks.db'
 ready_flag = False
 
-def pr3ocess_block_set(blocks):
-    start_time = time.time()
-    current_hash = ""
-    verify_results = []
-
-    # Function to process each block in a separate thread
-    def process_block(block):
-        _, hash_to_verify, key, *rest = block
-        if verify_argon2id_hash(hash_to_verify, key):
-            print("Verification successful for block:", block[0])
-            return True
-        else:
-            print(f"Verification failed for block {block[0]}")
-            return False
-
-    # Using ThreadPoolExecutor for multithreading
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # Schedule the process_block function to be executed for each block
-        futures = [executor.submit(process_block, block) for block in blocks]
-
-        # Process the results as they complete
-        for future in concurrent.futures.as_completed(futures):
-            verify_results.append(future.result())
-
-    # Compute the hash for all blocks (this part remains outside the multithreading scope)
-    for block in blocks:
-        block_str = '|'.join(block)
-        current_hash = compute_sha256(current_hash + block_str)
-
-    end_time = time.time()
-    elapsed_time_ms = (end_time - start_time) * 1000
-    return current_hash, elapsed_time_ms, verify_results
-
 
 def process_block_set(blocks):
     start_time = time.time()
@@ -76,6 +43,32 @@ def process_block_set(blocks):
     elapsed_time_ms = (end_time - start_time) * 1000
     return current_hash, elapsed_time_ms
 
+def insert_control_record(blocks_range, final_hash, difficulty):
+    conn = sqlite3.connect('control.db')  # Connect to your SQLite database
+    cursor = conn.cursor()
+
+    # Create the control table if it doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS control (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            blocks_range TEXT,
+            hash TEXT,
+            difficulty INT,
+            ts INTEGER
+        )
+    ''')
+
+    conn.commit()
+    unix_timestamp = int(time.time())
+
+    # Insert a new record into the control table
+    cursor.execute('''
+        INSERT INTO control (blocks_range, hash, difficulty, ts) VALUES (?, ?, ?, ?)
+    ''', (blocks_range, final_hash, difficulty, unix_timestamp))
+
+
+    conn.commit()  # Commit the changes
+    conn.close()   # Close the database connection
 
 async def watch_recent_blocks():
     processed_ids = set()  # Keeps track of processed block_ids
@@ -94,6 +87,8 @@ async def watch_recent_blocks():
                     block_list = list(blocks_to_process)[-10:]
                     final_hash, elapsed_time_ms = process_block_set(block_list)
                     print(f"Final hash for block set starting with {block_id_str}: {final_hash}, processing time: {elapsed_time_ms} ms")
+                    block_range = f"{int(block_id_str)-9}-{block_id_str}"
+                    insert_control_record(block_range, final_hash, 8)
                     blocks_to_process.clear()  # Clear the deque for the next set of blocks
 
         await asyncio.sleep(1)  # Check interval (e.g., every 1 second)
@@ -228,4 +223,3 @@ init_db()
 
 # Run the main coroutine
 asyncio.get_event_loop().run_until_complete(main())
-
