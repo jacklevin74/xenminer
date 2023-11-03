@@ -51,6 +51,7 @@ def insert_control_record(blocks_range, final_hash, difficulty):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS control (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            node TXT,
             blocks_range TEXT,
             hash TEXT,
             difficulty INT,
@@ -63,8 +64,8 @@ def insert_control_record(blocks_range, final_hash, difficulty):
 
     # Insert a new record into the control table
     cursor.execute('''
-        INSERT INTO control (blocks_range, hash, difficulty, ts) VALUES (?, ?, ?, ?)
-    ''', (blocks_range, final_hash, difficulty, unix_timestamp))
+        INSERT INTO control (node, blocks_range, hash, difficulty, ts) VALUES (?, ?, ?, ?, ?)
+    ''', ("myself", blocks_range, final_hash, difficulty, unix_timestamp))
 
 
     conn.commit()  # Commit the changes
