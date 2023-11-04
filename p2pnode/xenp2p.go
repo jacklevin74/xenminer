@@ -167,7 +167,7 @@ func processBlockHeight(ctx context.Context) {
 		if err != nil {
 			logger.Warn("Error getting message: ", err)
 		}
-		if maxBlockHeight > localHeight && peerId != masterPeerId {
+		if maxBlockHeight > localHeight {
 			//logger.Info("DIFF: ", localHeight, "<", maxBlockHeight)
 			delta := uint(math.Min(float64(maxBlockHeight-localHeight), 20))
 			want := make([]uint, delta)
@@ -691,7 +691,8 @@ func processNewHash(ctx context.Context) {
 		case xuni := <-cXuni:
 			// logger.Info("Discovered New Hash Id ", hash.Id)
 			// validate hash and save it to blocks.db / xuni.db
-			if peerId != masterPeerId {
+			//if peerId != masterPeerId {
+			if true {
 				some, _ := getXuni(dbh, xuni.Id)
 				if some == nil {
 					err := insertXuniRecord(dbh, xuni)
