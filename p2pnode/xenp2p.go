@@ -138,7 +138,7 @@ var wantedBlockIds = cmap.New[bool]()
 
 func processBlockHeight(ctx context.Context) {
 	subs := ctx.Value("subs").(Subs)
-	//topics := ctx.Value("topics").(Topics)
+	topics := ctx.Value("topics").(Topics)
 	db := ctx.Value("db").(*sql.DB)
 	peerId := ctx.Value("peerId").(string)
 	logger := ctx.Value("logger").(log0.EventLogger)
