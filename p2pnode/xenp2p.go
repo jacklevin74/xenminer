@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"math/rand"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
@@ -137,7 +138,7 @@ var wantedBlockIds = cmap.New[bool]()
 
 func processBlockHeight(ctx context.Context) {
 	subs := ctx.Value("subs").(Subs)
-	topics := ctx.Value("topics").(Topics)
+	//topics := ctx.Value("topics").(Topics)
 	db := ctx.Value("db").(*sql.DB)
 	peerId := ctx.Value("peerId").(string)
 	logger := ctx.Value("logger").(log0.EventLogger)
@@ -175,14 +176,14 @@ func processBlockHeight(ctx context.Context) {
 				want[i] = localHeight + i + 1
 				wantedBlockIds.Set(fmt.Sprintf("%d", localHeight+i+1), true)
 			}
-			msgBytes, err := json.Marshal(want)
-			if err != nil {
-				logger.Warn("Error encoding message: ", err)
-			}
-			err = topics.get.Publish(ctx, msgBytes)
-			if err != nil {
-				logger.Warn("Error publishing message: ", err)
-			}
+			//msgBytes, err := json.Marshal(want)
+			//if err != nil {
+			//	logger.Warn("Error encoding message: ", err)
+			//}
+			//err = topics.get.Publish(ctx, msgBytes)
+			//if err != nil {
+			//	logger.Warn("Error publishing message: ", err)
+			//}
 		}
 		if maxBlockHeight == localHeight {
 			logger.Debug("IN SYNC: ", localHeight, "=", maxBlockHeight)
@@ -190,6 +191,18 @@ func processBlockHeight(ctx context.Context) {
 		state.BlockHeight = uint64(maxBlockHeight)
 		runtime.Gosched()
 	}
+}
+
+func init() {
+    // Initialize the global pseudo random generator
+    rand.Seed(time.Now().UnixNano())
+}
+
+func shouldProcess() bool {
+    // Generate a random number between 0 and 99
+    randomNumber := rand.Intn(100)
+    // If the random number is less than 5, return true (5% chance)
+    return randomNumber < 5
 }
 
 func processGet(ctx context.Context) {
@@ -204,6 +217,13 @@ func processGet(ctx context.Context) {
 		if msg.ReceivedFrom.String() == peerId {
 			continue
 		}
+		
+		if !shouldProcess() {
+			continue // Skip processing if peerId is not selected
+		}
+
+		logger.Warn("WILL SEND BLOCKS")
+
 		if err != nil {
 			logger.Warn("Error getting want message: ", err)
 		}
@@ -212,7 +232,7 @@ func processGet(ctx context.Context) {
 		if err != nil {
 			logger.Warn("Error converting want message: ", err)
 		}
-		logger.Debug("WANT block_id(s):", blockIds)
+	        logger.Info("Sending block as requested: ", blockIds)
 		var blocks Blocks
 		for _, blockId := range blockIds {
 			block, err := getBlock(db, blockId)
