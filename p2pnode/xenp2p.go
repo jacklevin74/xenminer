@@ -176,14 +176,14 @@ func processBlockHeight(ctx context.Context) {
 				want[i] = localHeight + i + 1
 				wantedBlockIds.Set(fmt.Sprintf("%d", localHeight+i+1), true)
 			}
-			//msgBytes, err := json.Marshal(want)
-			//if err != nil {
-			//	logger.Warn("Error encoding message: ", err)
-			//}
-			//err = topics.get.Publish(ctx, msgBytes)
-			//if err != nil {
-			//	logger.Warn("Error publishing message: ", err)
-			//}
+			msgBytes, err := json.Marshal(want)
+			if err != nil {
+				logger.Warn("Error encoding message: ", err)
+			}
+			err = topics.get.Publish(ctx, msgBytes)
+			if err != nil {
+				logger.Warn("Error publishing message: ", err)
+			}
 		}
 		if maxBlockHeight == localHeight {
 			logger.Debug("IN SYNC: ", localHeight, "=", maxBlockHeight)
