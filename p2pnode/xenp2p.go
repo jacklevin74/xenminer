@@ -211,16 +211,28 @@ func processGet(ctx context.Context) {
 	db := ctx.Value("db").(*sql.DB)
 	peerId := ctx.Value("peerId").(string)
 	logger := ctx.Value("logger").(log0.EventLogger)
+	// Define a map to hold the timestamp of the last processed message per sender
+    	lastProcessed := make(map[string]time.Time)
+    	// Define minimum time interval between messages from the same sender
+    	minInterval := 30 * time.Second // for example, 30 seconds
+
 
 	for {
 		msg, err := subs.get.Next(ctx)
 		if msg.ReceivedFrom.String() == peerId {
 			continue
 		}
+		sender := msg.ReceivedFrom.String()
 		
-		if !shouldProcess() {
-			continue // Skip processing if peerId is not selected
+		// Check if we've received a message from this sender recently
+		if lastTime, ok := lastProcessed[sender]; ok {
+		    if time.Since(lastTime) < minInterval {
+			// If we have and it's too soon, log and skip this message
+			logger.Warn("Too many requests from peer: ", sender)
+			continue
+		    }
 		}
+		lastProcessed[sender] = time.Now()
 
 		logger.Warn("WILL SEND BLOCKS")
 
@@ -232,7 +244,7 @@ func processGet(ctx context.Context) {
 		if err != nil {
 			logger.Warn("Error converting want message: ", err)
 		}
-	        logger.Info("Sending block as requested: ", blockIds)
+	        logger.Infof("Sending block as requested: %v %v ", blockIds, msg.ReceivedFrom.String())
 		var blocks Blocks
 		for _, blockId := range blockIds {
 			block, err := getBlock(db, blockId)
