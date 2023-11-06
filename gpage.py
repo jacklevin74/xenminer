@@ -529,7 +529,6 @@ def verify_hash():
 
             c.execute('''INSERT OR IGNORE INTO account_attempts (account, timestamp, attempts)
                 VALUES (?, ?, ?)''', (account, timestamp, attempts))
-            print("Attempts ", account, (account, timestamp, attempts))
             print("This Generates 200 for difficulty being good", submitted_difficulty, int(difficulty))
             print("Inserting hash into db: ", hash_to_verify)
 
