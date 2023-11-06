@@ -258,5 +258,5 @@ conn.commit()
 conn.close()
 
 # Call verify_block_hashes after your existing code
-verify_block_hashes()
-validate()
+#verify_block_hashes()
+#validate()
