@@ -29,13 +29,16 @@ def run_db_operations():
 
             # Prepare a dictionary to keep counts
             super_block_counts = defaultdict(int)
-            #WEVOMTAwODIwMjJYRU4
+
             for row in rows:
                 hash_to_verify, account_to_update = row
-                if 'WEVOMTAwODIwMjJYRU4' in hash_to_verify:
-                    capital_count = sum(1 for char in re.sub('[0-9]', '', hash_to_verify) if char.isupper())
-                    if capital_count >= 65:
-                        super_block_counts[account_to_update] += 1
+                last_element = hash_to_verify.split("$")[-1]
+                hash_uppercase_only = ''.join(filter(str.isupper, last_element))
+                capital_count = len(hash_uppercase_only)
+                #capital_count = sum(1 for char in re.sub('[0-9]', '', hash_to_verify) if char.isupper())
+
+                if capital_count >= 50:
+                    super_block_counts[account_to_update] += 1
 
             # Insert all rows in one go
             cursor.executemany("""
@@ -60,4 +63,3 @@ def run_db_operations():
 
 # Kick off the first run
 run_db_operations()
-
