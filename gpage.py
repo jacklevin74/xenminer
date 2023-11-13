@@ -198,7 +198,8 @@ def leaderboard():
                  FROM (SELECT * FROM account_attempts ORDER BY timestamp DESC LIMIT 100000)''')
     result = c.fetchone()
     total_attempts, total_time = result
-    total_attempts_per_second = total_attempts / (total_time if total_time != 0 else 1)
+    #total_attempts_per_second = total_attempts / (total_time if total_time != 0 else 1)
+    total_attempts_per_second = 1
     conn.close()
 
     # Get the latest rate from the difficulty database
@@ -503,8 +504,14 @@ def verify_hash():
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401
 
+    try:
+        is_verified = argon2.verify(key, hash_to_verify)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        is_verified = False
 
-    if argon2.verify(key, hash_to_verify):
+    #if argon2.verify(key, hash_to_verify):
+    if is_verified: 
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         is_xen11_present = 'XEN11' in hash_to_verify[-87:]
         is_xuni_present = re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None
@@ -518,19 +525,34 @@ def verify_hash():
             # If XUNI is present and time is within 5 minutes of the hour, then insert to DB
             if is_xuni_present and is_within_five_minutes_of_hour():
                 print("XUNI submitted and added to batch")
-                c.execute('''INSERT INTO xuni (hash_to_verify, key, account)
-                      VALUES (?, ?, ?)''', (hash_to_verify, key, account))
+                #c.execute('''INSERT INTO xuni (hash_to_verify, key, account)
+                 #     VALUES (?, ?, ?)''', (hash_to_verify, key, account))
+                
+                insert_query = '''INSERT INTO xuni (hash_to_verify, key, account) VALUES (?, ?, ?)'''
+                data_tuple = (hash_to_verify, key, account)
+                success = insert_with_retry(c, insert_query, data_tuple)
+                if not success:
+                    print("Could not insert into the database after multiple retries.")
+
             elif is_xen11_present:  # no time restrictions for XEN11
                 print("XEN11 hash added to batch")
-                c.execute('''INSERT INTO blocks (hash_to_verify, key, account)
-                    VALUES (?, ?, ?)''', (hash_to_verify, key, account))
+                #c.execute('''INSERT INTO blocks (hash_to_verify, key, account)
+                 #   VALUES (?, ?, ?)''', (hash_to_verify, key, account))
+
+                insert_query = '''INSERT INTO blocks (hash_to_verify, key, account) VALUES (?, ?, ?)'''
+                data_tuple = (hash_to_verify, key, account)
+                success = insert_with_retry(c, insert_query, data_tuple)
+                if not success:
+                    print("Could not insert into the database after multiple retries.")
+
             else:
                 return jsonify({"message": "XUNI found outside of time window"}), 401
 
-            c.execute('''INSERT OR IGNORE INTO account_attempts (account, timestamp, attempts)
-                VALUES (?, ?, ?)''', (account, timestamp, attempts))
+            #c.execute('''INSERT OR IGNORE INTO account_attempts (account, timestamp, attempts)
+             #   VALUES (?, ?, ?)''', (account, timestamp, attempts))
             print("This Generates 200 for difficulty being good", submitted_difficulty, int(difficulty))
             print("Inserting hash into db: ", hash_to_verify)
+            
 
             conn.commit()
 
@@ -547,6 +569,22 @@ def verify_hash():
     else:
         print ("Hash verification failed")
         return jsonify({"message": "Hash verification failed."}), 401
+
+
+def insert_with_retry(cursor, query, data, max_retries=3, sleep_interval=1):
+    attempt = 0
+    while attempt < max_retries:
+        try:
+            cursor.execute(query, data)
+            return True  # Success
+        except sqlite3.OperationalError as e:
+            if str(e) == 'database is locked':
+                print(f"Database is locked, retrying {attempt + 1}/{max_retries}")
+                time.sleep(sleep_interval)  # Wait for the database to be unlocked
+                attempt += 1
+            else:
+                raise  # Other operational errors are not handled here
+    return False  # Max retries reached, could not insert
 
 
 @app.route('/validate', methods=['POST'])
