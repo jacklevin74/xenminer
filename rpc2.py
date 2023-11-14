@@ -2,14 +2,13 @@ from flask import Flask, request, jsonify
 import secrets
 import sqlite3
 from ethereum.transactions import Transaction
-from ethereum.utils import decode_hex
-import rlp
-from rlp import encode
-from web3 import Web3
-import time
+import json
 
 from flask_cors import cross_origin
 
+from ethapi.api import EthApi
+
+eth_client = EthApi("sqlite:///blockchain.db")
 
 app = Flask(__name__)
 
@@ -454,20 +453,12 @@ def index():
         }
 
     elif data['method'] == 'eth_getBlockByNumber':
-        print("RETURN BLOCK DATA")
         requested_block_number = data['params'][0]
-        current_timestamp = int(time.time())  # Assuming you've imported the time module
-
-        result = {
-            'number': requested_block_number,
-            'hash': '0x1234567890abcdef',  # Mock hash, adjust as needed
-            'timestamp': hex(current_timestamp),
-            'transactions': [],
-            'parentHash': '0xabcdef1234567890',  # Mock parent hash
-            'miner': '0xdeadbeefdeadbeef',      # Mock miner address
-            # Add other block attributes if needed
-        }
-
+        full_tx = data['params'][1]
+        res = eth_client.block_by_number(requested_block_number, full_tx=full_tx)
+        if not res:
+            return {'jsonrpc': '2.0', 'result': None}
+        return json.dumps(res, default=vars)
     
     elif data['method'] == 'net_version':
         result = '1'  # Mainnet
@@ -476,31 +467,12 @@ def index():
     elif data['method'] == 'eth_getBlockByHash':
         block_hash = data['params'][0]
         full_tx = data['params'][1]
+        res = eth_client.block_by_hash(block_hash, full_tx)
+        if not res:
+            return {'jsonrpc': '2.0', 'result': None}
+        return json.dumps(res, default=vars)
 
-        # Fetch block data by block hash.
-        # For demonstration purposes, let's use a mock block.
-        mock_block = {
-            'number': '0x1b4',
-            'hash': block_hash,
-            'transactions': ['0x123...', '0x124...'] if not full_tx else [
-                {
-                    'hash': '0x123...',
-                    'from': '0xabc...',
-                    'to': '0xdef...',
-                    'value': '0x1'
-                },
-                {
-                    'hash': '0x124...',
-                    'from': '0xghi...',
-                    'to': '0xjkl...',
-                    'value': '0x2'
-                }
-            ]
-            # ... (other block fields)
-        }
 
-        result = mock_block
-    
     elif data['method'] == 'eth_gasPrice':
         result = '0x3B9ACA00'  # Example gas price, 1 Gwei in hexadecimal
 
@@ -540,9 +512,8 @@ def broadcast_transaction(raw_tx):
     fake_tx_hash = '0x' + secrets.token_hex(32)
     return fake_tx_hash
 
-from Crypto.Hash import keccak
+
 import rlp
-from coincurve import PublicKey
 from web3 import Web3
 
 
