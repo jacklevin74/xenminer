@@ -261,7 +261,7 @@ def mine_block(stored_targets, prev_hash, address):
                         break
                     elif target == "XEN11":
                         found_valid_hash = True
-                        last_element = hash_data.split("$")[-1]
+                        last_element = hashed_data.split("$")[-1]
                         hash_uppercase_only = ''.join(filter(str.isupper, last_element))
                         if len(hash_uppercase_only) >= 50:
                             print(f"{RED}Superblock found{RESET}")
