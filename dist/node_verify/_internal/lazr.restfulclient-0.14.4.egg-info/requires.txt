@@ -1,0 +1,24 @@
+
+[:python_version < "3"]
+httplib2
+
+[:python_version < "3.8"]
+importlib-metadata
+
+[:python_version >= "3"]
+httplib2>=0.7.7
+
+[docs]
+Sphinx
+
+[test]
+fixtures>=1.3.0
+lazr.authentication
+lazr.restful>=0.11.0
+oauth
+testtools
+wsgi_intercept
+zope.testrunner
+
+[test:python_version < "3"]
+mock

@@ -1,0 +1,30 @@
+
+[:python_version < "3.8"]
+typing-extensions>=3.6.4
+
+[docs]
+jaraco.packaging>=8.2
+rst.linker>=1.9
+sphinx
+
+[perf]
+ipython
+
+[testing]
+flufl.flake8
+packaging
+pep517
+pyfakefs
+pytest-checkdocs>=2.4
+pytest-cov
+pytest-enabler>=1.0.1
+pytest-flake8
+pytest-perf>=0.9.2
+pytest>=4.6
+
+[testing:platform_python_implementation != "PyPy"]
+pytest-black>=0.3.7
+pytest-mypy
+
+[testing:python_version < "3.9"]
+importlib_resources>=1.3

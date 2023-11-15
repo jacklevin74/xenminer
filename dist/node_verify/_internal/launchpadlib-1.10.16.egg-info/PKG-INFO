@@ -1,0 +1,424 @@
+Metadata-Version: 2.1
+Name: launchpadlib
+Version: 1.10.16
+Summary: Script Launchpad through its web services interfaces.  Officially supported.
+Home-page: https://help.launchpad.net/API/launchpadlib
+Author: The Launchpad developers
+Author-email: launchpadlib@lists.launchpad.net
+Maintainer: LAZR Developers
+Maintainer-email: lazr-developers@lists.launchpad.net
+License: LGPL v3
+Download-URL: https://launchpad.net/launchpadlib/+download
+Project-URL: Source, https://code.launchpad.net/launchpadlib
+Project-URL: Issue Tracker, https://bugs.launchpad.net/launchpadlib
+Project-URL: Documentation, https://launchpadlib.readthedocs.io/en/latest/
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Provides-Extra: docs
+Provides-Extra: test
+Provides-Extra: testing
+License-File: COPYING.txt
+
+..
+    This file is part of launchpadlib.
+
+    launchpadlib is free software: you can redistribute it and/or modify it
+    under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, version 3 of the License.
+
+    launchpadlib is distributed in the hope that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+    License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with launchpadlib.  If not, see <http://www.gnu.org/licenses/>.
+
+launchpadlib
+************
+
+See https://help.launchpad.net/API/launchpadlib .
+
+
+=====================
+NEWS for launchpadlib
+=====================
+
+1.10.16 (2022-01-21)
+====================
+- Add ``pre-commit`` configuration.
+- Remove some obsolete scripts from ``contrib/``.
+- Apply ``black`` code formatter.
+- Publish documentation on Read the Docs.
+- Remove remnants of ``simplejson`` in favour of ``json``.
+- Apply inclusive naming via the ``woke`` ``pre-commit`` hook.
+- Optionally get credentials file from ``LP_CREDENTIALS_FILE`` environment
+  variable.  [bug=737473]
+
+1.10.15.1 (2021-10-27)
+======================
+- Re-release without stray files in sdist.
+
+1.10.15 (2021-10-27)
+====================
+- Move dependencies of launchpadlib.testing to a new ``testing`` extra.
+  [bug=1019700]
+- Stop excluding MANIFEST.in from the sdist.
+- Declare support for Python 3.9 and 3.10.
+- Move code hosting to git (https://code.launchpad.net/launchpadlib).
+
+1.10.14 (2021-09-13)
+====================
+- Adjust versioning strategy to avoid importing pkg_resources, which is slow
+  in large environments.
+
+1.10.13 (2020-04-19)
+====================
+- Fix test runs under sudo.
+
+1.10.12 (2020-04-17)
+====================
+- Postpone keyring.errors import in the same way that we postpone importing
+  keyring itself.
+
+1.10.11 (2020-04-14)
+====================
+- Don't store credentials or open a browser window when running under sudo.
+  [bug=1825014,1862948]
+- Fall back to in-memory credentials store if no keyring backend is
+  available.  [bug=1864204]
+
+1.10.10 (2020-02-04)
+====================
+- Fix AccessToken.from_string crash on Python 3.8.  [bug=1861873]
+
+1.10.9 (2019-11-28)
+===================
+- Explicitly install version.txt; launchpadlib requires it.
+
+1.10.8 (2019-11-26)
+===================
+- Squash a deprecation warning on Python >= 3.7 in
+  launchpadlib.testing.launchpad.
+- Switch from buildout to tox.
+- Weaken hosted-files test slightly to avoid problems with zope.publisher >=
+  4.2.2.
+
+1.10.7 (2019-05-22)
+===================
+- Change 'dev' URLs from launchpad.dev to launchpad.test.
+
+1.10.6 (2018-03-08)
+===================
+- Fix saving of credentials in python3 with gnome-keyring.  [bug=1685962]
+
+1.10.5 (2017-02-02)
+===================
+- Fix AccessToken.from_string crash on Python 3.  [bug=1471927]
+- Fix fallback if authorizing a token with a browser raises webbrowser.Error.
+- Stop introduction.txt doctest from writing to $HOME.
+
+1.10.4 (2016-07-12)
+===================
+- Fix _bad_oauth_token crash on Python 3.  [bug=1471894]
+- Time out make_end_user_authorize_token after 15 minutes.
+- Ignore PendingDeprecationWarning from lazr.restfulclient.  [bug=1473577]
+- Ask forgiveness rather than permission when creating cache directories.
+- Fix browser token authorization on OS X.  [bug=1516080]
+
+1.10.3 (2014-12-05)
+===================
+- Port to Python3.
+- Detect proxies from the environment by default.
+
+1.10.2 (2012-07-05)
+===================
+- Typo in the doctest fix, discovered when trying to integrate with launchpad
+  itself. [bug=1020667]
+
+1.10.1 (2012-07-04)
+===================
+- Fix a doctest in introduction.txt so that the test suite runs with
+  python-2.7 (note the doctests only run when running integrated with
+  launchpad's test suite itself). [bug=1020667]
+
+1.10.0 (2012-06-19)
+===================
+- Add environment variable, LP_DISABLE_SSL_CERTIFICATE_VALIDATION, to
+  disable SSL certificate checks.  Most useful when testing against
+  development servers.
+
+1.9.12 (2011-12-05)
+===================
+- Move keyring base64 encoding to KeyringCredential and be more
+  defensive about decoding.  [bug=900307]
+
+1.9.11 (2011-11-21)
+===================
+- 1.9.10 was a bad release due to incomplete NEWS entries.
+
+- Add fake Launchpad web service for unit test.
+
+- Improve HACKING documentation.
+
+- Improve launchpadlib directory discovery on Windows.
+
+- Added script to delete spurious bugtasks or split a bugtask from a bug.
+
+- Properly handle Unicode passwords if returned by the keyring.
+
+- Base 64 encode serialized credentials before putting in keyring/wallet.
+
+1.9.10 (2011-11-21)
+===================
+- Base 64 encode serialized credentials before putting in keyring/wallet.
+
+1.9.9 (2011-07-27)
+==================
+
+- Fix a failing test for lazr.restfulclient 0.12.0.
+
+1.9.8 (2011-02-28)
+==================
+
+- Detect the error Launchpad sends when it doesn't recognize an access
+  token, and get a new token.
+
+1.9.7 (2011-02-15)
+==================
+
+- Slightly tweaked the behavior of EDGE_SERVICE_ROOT, and improved tests.
+
+1.9.6 (2011-02-14)
+==================
+
+- Added EDGE_SERVICE_ROOT and the 'edge' alias back, though they both
+  operate on production behind the scenes. Using the 'edge' alias will
+  cause a deprecation warning.
+
+1.9.5 (2011-02-08)
+==================
+
+- Fixed a bug that prevented the deprecated get_token_and_login code
+  from working, and that required that users of get_token_and_login
+  get a new token on every usage.
+
+1.9.4 (2011-01-18)
+==================
+
+- Removed references to the 'edge' service root, which is being phased out.
+
+- Fixed a minor bug in the upload_release_tarball contrib script which
+  was causing tarballs to be uploaded with the wrong media type.
+
+- The XSLT stylesheet for converting the Launchpad WADL into HTML
+  documentation has been moved back into Launchpad.
+
+1.9.3 (2011-01-10)
+==================
+
+- The keyring package import is now delayed until the keyring needs to be
+  accessed.  This reduces launchapdlib users' exposure to unintended side
+  effects of importing keyring (KWallet authorization dialogs and the
+  registration of a SIGCHLD handler).
+
+1.9.2 (2011-01-07)
+==================
+
+- Added a missing import.
+
+1.9.1 (2011-01-06)
+==================
+
+- Corrected a test failure.
+
+1.9.0 (2011-01-05)
+==================
+
+- When an authorization token expires or becomes invalid, attempt to
+  acquire a new one, even in the middle of a session, rather than
+  crashing.
+
+- The HTML generated by wadl-to-refhtml.xsl now validates.
+
+- Most of the helper login methods have been deprecated. There are now
+  only two helper methods:
+
+  * Launchpad.login_anonymously, for anonymous credential-free access.
+  * Launchpad.login_with, for programs that need a credential.
+
+
+1.8.0 (2010-11-15)
+==================
+
+- Store authorization tokens in the Gnome keyring or KDE wallet, when
+  available. The credentials_file parameter of Launchpad.login_with() is now
+  ignored.
+
+- By default, Launchpad.login_with() now asks Launchpad for
+  desktop-wide integration. This removes the need for each individual
+  application to get its own OAuth token.
+
+1.7.0 (2010-09-23)
+==================
+
+- Removed "fake Launchpad browser" code that didn't work and was
+  misleading developers.
+
+- Added support for http://qastaging.launchpad.net by adding
+  astaging to the uris.
+
+1.6.5 (2010-08-23)
+==================
+
+- Make launchpadlib compatible with the latest lazr.restfulclient.
+
+1.6.4 (2010-08-18)
+==================
+
+- Test fixes.
+
+1.6.3 (2010-08-12)
+==================
+
+- Instead of making the end-user hit Enter after authorizing an
+  application to access their Launchpad account, launchpadlib will
+  automatically poll Launchpad until the user makes a decision.
+
+- launchpadlib now raises a more helpful exception when the end-user
+  explicitly denies access to a launchpadlib application.
+
+- Improved the XSLT stylesheet to reflect Launchpad's more complex
+  top-level structure. [bug=286941]
+
+- Test fixes. [bug=488448,616055]
+
+1.6.2 (2010-06-21)
+==================
+
+- Extended the optimization from version 1.6.1 to apply to Launchpad's
+  top-level collection of people.
+
+1.6.1 (2010-06-16)
+==================
+
+- Added an optimization that lets launchpadlib avoid making an HTTP
+  request in some situations.
+
+1.6.0 (2010-04-07)
+==================
+
+- Fixed a test to work against the latest version of Launchpad.
+
+1.5.8 (2010-03-25)
+==================
+
+- Use version 1.0 of the Launchpad web service by default.
+
+1.5.7 (2010-03-16)
+==================
+
+- Send a Referer header whenever making requests to the Launchpad
+  website (as opposed to the web service) to avoid falling afoul of
+  new cross-site-request-forgery countermeasures.
+
+1.5.6 (2010-03-04)
+==================
+
+- Fixed a minor bug when using login_with() to access a version of the
+  Launchpad web service other than the default.
+
+- Added a check to catch old client code that would cause newer
+  versions of launchpadlib to make nonsensical requests to
+  https://api.launchpad.dev/beta/beta/, and raise a helpful exception
+  telling the developer how to fix it.
+
+1.5.5
+=====
+
+- Added the ability to access different versions of the Launchpad web
+  service.
+
+1.5.4 (2009-12-17)
+==================
+
+- Made it easy to get anonymous access to a Launchpad instance.
+
+- Made it easy to plug in different clients that take the user's
+  Launchpad login and password for purposes of authorizing a request
+  token. The most secure technique is still the default: to open the
+  user's web browser to the appropriate Launchpad page.
+
+- Introduced a command-line script bin/launchpad-credentials-console,
+  which takes the user's Launchpad login and password, and authorizes
+  a request token on their behalf.
+
+- Introduced a command-line script bin/launchpad-request-token, which
+  creates a request token on any Launchpad installation and dumps the
+  JSON description of that token to standard output.
+
+- Shorthand service names like 'edge' should now be respected
+  everywhere in launchpadlib.
+
+1.5.3 (2009-10-22)
+==================
+
+- Moved some more code from launchpadlib into the more generic
+  lazr.restfulclient.
+
+1.5.2 (2009-10-01)
+==================
+
+- Added a number of new sample scripts from elsewhere.
+
+- Added a reference to the production Launchpad instance.
+
+- Made it easier to specify a Launchpad instance to run against.
+
+1.5.1 (2009-07-16)
+==================
+
+- Added a sample script for uploading a release tarball to Launchpad.
+
+1.5.0 (2009-07-09)
+==================
+
+- Most of launchpadlib's code has been moved to the generic
+  lazr.restfulclient library. launchpadlib now contains only code
+  specific to Launchpad. There should be no changes in functionality.
+
+- Moved bootstrap.py into the top-level directory. Having it in a
+  subdirectory with a top-level symlink was breaking installation on
+  Windows.
+
+- The notice to the end-user (that we're opening their web
+  browser) is now better formatted.
+
+1.0.1 (2009-05-30)
+==================
+
+- Correct tests for new launchpad cache behavior in librarian
+
+- Remove build dependency on setuptools_bzr because it was causing bzr to be
+  downloaded during installation of the package, which was unnecessary and
+  annoying.
+
+1.0 (2009-03-24)
+================
+
+- Initial release on PyPI
+
+
