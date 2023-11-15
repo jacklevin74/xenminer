@@ -297,7 +297,7 @@ def mine_block(stored_targets, prev_hash, address):
     log_file = 'log_blocks.log'  # replace with your log file's path
 
     with open(log_file, 'a') as file:  # 'a' means append mode
-        file.write(payload + '\n')
+        file.write(json_dumps(payload) + '\n')
 
     print (payload)
 
