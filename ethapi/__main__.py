@@ -1,7 +1,8 @@
 from server import app
-from config import args
+from config import cli_args
 import logging
 
+args = cli_args()
 log_level = logging.DEBUG if args.verbose else logging.INFO
 logging.basicConfig(encoding="utf-8", level=log_level)
 
