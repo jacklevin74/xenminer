@@ -27,15 +27,18 @@ python3 miner.py
 
 ### Support Methods
 
+- net_version
+- eth_chainId
 - eth_blockNumber
 - eth_getBlockByNumber
 - eth_getBlockByHash
+- eth_getBalance
 
 ### Usage
 
 > Run the server
 ```shell
-python3 ethapi/run.py
+python3 ethapi
 ```
 
 #### Examples

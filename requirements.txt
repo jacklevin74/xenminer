@@ -7,3 +7,4 @@ sqlalchemy
 hexbytes
 eth-utils
 flask-sock
+python-decouple
