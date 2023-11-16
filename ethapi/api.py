@@ -1,26 +1,31 @@
+from hexbytes import (
+    HexBytes,
+)
+from web3.types import BlockNumber, Timestamp, BlockData, BlockIdentifier
 from sqlalchemy import text
 from sqlalchemy import create_engine
 import logging
-import json
-from ethapi.types import BlockData, TransactionData
-import hashlib
+
 DEFAULT_DB_URL = "sqlite+pysqlite:///:memory:"
 DEFAULT_LOG_LEVEL = logging.INFO
 
 
 class EthApi:
     def __init__(self, db_url: str = DEFAULT_DB_URL):
-        """Creates a new Ethereum protocol API instance"""
+        """
+        Creates a new Ethereum protocol API instance
+        """
         self.logger = logging.getLogger(__name__)
         self.engine = create_engine(
             db_url, echo=True, connect_args={"check_same_thread": False}
         )
         self.conn = self.engine.connect()
 
-    def block_by_hash(self, block_hash, full_tx: bool = True) -> BlockData | None:
+    def block_by_hash(
+        self, block_hash: BlockIdentifier, full_tx: bool = True
+    ) -> BlockData | None:
         """
-        GetBlockByHash returns the requested block. When fullTx is true all transactions in the block are returned in full
-        detail, otherwise only the transaction hash is returned.
+        Returns information of the block matching the given block hash
         """
         logging.debug("block_by_hash")
         if not block_hash:
@@ -46,43 +51,34 @@ class EthApi:
         if not row:
             return None
 
+        self.logger.debug("block_by_hash", {"row": row})
+
         b = BlockData()
-        b.number = hex(row[0])
-        b.timestamp = hex(int(row[1]))
-        b.hash = row[2]
-        b.parentHash = row[3]
 
-        transactions = json.loads(row[4])
-        for idx, tx in enumerate(transactions):
+        try:
+            b["number"] = BlockNumber(row[0])
+            b["timestamp"] = Timestamp(int(row[1]))
+            b["hash"] = HexBytes.fromhex(row[2])
 
-            if "id" in tx:
-                m = hashlib.sha256(f'{tx["account"]}{tx["id"]}10'.encode())
-            else:
-                m = hashlib.sha256(f'{tx["account"]}{tx["block_id"]}10'.encode())
-
-            tx_hash = m.hexdigest()
-
-            if full_tx:
-                tx_obj = TransactionData()
-                tx_obj.blockHash = b.hash
-                tx_obj.from_ = tx["account"]
-                tx_obj.to = "0x0"
-                tx_obj.gas = 0
-                tx_obj.gasPrice = 0
-                tx_obj.hash = tx_hash
-                tx_obj.transactionIndex = hex(idx)
-                b.transactions.append(tx_obj)
-            else:
-                b.transactions.append(tx_hash)
+            if row[3] != "genesis":
+                b["parentHash"] = HexBytes.fromhex(row[3])
+        except RuntimeError as e:
+            self.logger.error("failed to read block data", {"row": row})
+            raise e
         return b
 
     def block_by_number(
-        self, block_number: str = "latest", full_tx: bool = False
+        self, block_number: BlockIdentifier, full_tx: bool = False
     ) -> BlockData | None:
+        """
+        Returns information of the block matching the given block number.
+        """
         logging.debug("block_by_number", {block_number, full_tx})
         return self.block_by_hash(self._get_block_hash_by_number(block_number), full_tx)
 
-    def _get_block_hash_by_number(self, block_number):
+    def _get_block_hash_by_number(
+        self, block_number: BlockIdentifier
+    ) -> BlockIdentifier | None:
         logging.debug("_get_block_hash_by_number")
 
         if block_number == "earliest":

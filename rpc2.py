@@ -7,6 +7,7 @@ import json
 from flask_cors import cross_origin
 
 from ethapi.api import EthApi
+from ethapi.utils import encode_block
 
 eth_client = EthApi("sqlite:///blockchain.db")
 
@@ -43,7 +44,7 @@ def get_xuni_account_count(account_name):
     cursor = conn.cursor()
 
     try:
-        # Run the SQL query
+        # Run the SQL querye
         cursor.execute("SELECT COUNT(*) as n FROM xuni WHERE account = ?", (account_name,))
         data = cursor.fetchone()
 
@@ -453,16 +454,15 @@ def index():
         }
 
     elif data['method'] == 'eth_getBlockByNumber':
-        requested_block_number = data['params'][0]
+        block_number = data['params'][0]
         full_tx = data['params'][1]
-        res = eth_client.block_by_number(requested_block_number, full_tx=full_tx)
+        res = eth_client.block_by_number(block_number, full_tx=full_tx)
         if not res:
             return {'jsonrpc': '2.0', 'result': None}
-        return json.dumps(res, default=vars)
+        return jsonify(encode_block(res))
     
     elif data['method'] == 'net_version':
         result = '1'  # Mainnet
-
 
     elif data['method'] == 'eth_getBlockByHash':
         block_hash = data['params'][0]
@@ -470,8 +470,14 @@ def index():
         res = eth_client.block_by_hash(block_hash, full_tx)
         if not res:
             return {'jsonrpc': '2.0', 'result': None}
-        return json.dumps(res, default=vars)
+        return jsonify(encode_block(res))
 
+    elif data['method'] == 'eth_getTransactionByHash':
+        transaction_hash = data['params'][0]
+        res = eth_client.transaction_by_hash(transaction_hash)
+        if not res:
+            return {'jsonrpc': '2.0', 'result': None}
+        return json.dumps(res, default=vars)
 
     elif data['method'] == 'eth_gasPrice':
         result = '0x3B9ACA00'  # Example gas price, 1 Gwei in hexadecimal
