@@ -89,7 +89,7 @@ def transfer(from_account, to_account, value):
         #cursor.execute("SELECT super_block_count FROM super_blocks WHERE LOWER(account) = ?", (from_account,))
 
         #row = cursor.fetchone()
-
+        
         #if row:
         #    current_balance = row[0]
         #    if current_balance < value:
@@ -117,8 +117,8 @@ def transfer(from_account, to_account, value):
         #""", (value, to_account))
 
         #if cursor.rowcount == 0:
-        #print(f"Account {to_account} not found. Inserting a new row.")
-        #cursor.execute("INSERT INTO super_blocks (account, super_block_count) VALUES (?, ?)", (to_account, value))
+            #print(f"Account {to_account} not found. Inserting a new row.")
+            #cursor.execute("INSERT INTO super_blocks (account, super_block_count) VALUES (?, ?)", (to_account, value))
 
         # Commit and close
         #conn.commit()
@@ -188,7 +188,7 @@ def rlp_encode(input_string):
 
 def handle_eth_call(data):
     print("In handle_eth_call function: ", data)
-
+    
     # Check if 'data' key exists
     if 'params' not in data or not isinstance(data['params'], list) or len(data['params']) == 0 or 'data' not in data['params'][0]:
         print ("Data missing: ", data)
@@ -339,7 +339,7 @@ def index():
     if data['method'] == 'eth_blockNumber':
         current_block_number += 1  # Increment block number
         result = hex(current_block_number)
-
+        
         response = {
             'jsonrpc': '2.0',
             'id': data.get('id', None),
@@ -362,12 +362,12 @@ def index():
 
     #elif data['method'] == 'eth_call':
     #    result = '0x123456'
-
+    
     elif data['method'] == 'eth_call':
         print ("ETH CALL RECEIVED: ")
         print (data)
         result = handle_eth_call(data)
-
+    
     elif data['method'] == 'eth_chainId':
         result = '0x18705'  # Mainnet
 
@@ -430,7 +430,7 @@ def index():
         nonce = get_nonce(address)
         print ("Returning nonce: ", nonce)
         result = hex(nonce)
-
+        
         print ("Returning nonce hex: ", result)
 
     elif data['method'] == '1eth_getTransactionCount':
@@ -445,7 +445,7 @@ def index():
         result = hex(nonces.get(address, 0))
         print ("Returning nonce hex: ", result)
 
-
+    
     elif data['method'] == 'Xeth_getBlockByNumber':
         result = {
             'number': '0x5BAD55',
@@ -468,7 +468,7 @@ def index():
             # Add other block attributes if needed
         }
 
-
+    
     elif data['method'] == 'net_version':
         result = '1'  # Mainnet
 
@@ -500,7 +500,7 @@ def index():
         }
 
         result = mock_block
-
+    
     elif data['method'] == 'eth_gasPrice':
         result = '0x3B9ACA00'  # Example gas price, 1 Gwei in hexadecimal
 
@@ -519,12 +519,12 @@ def index():
             print("Sending response:", result)  # Print response to the screen
             return result
 
-
+ 
     else:
         response = {'jsonrpc': '2.0', 'error': {'code': -32601, 'message': 'Method not found'}, 'id': data.get('id', None)}
         print("Sending response:", response)  # Print response to the screen
         return jsonify(response), 400
-
+    
     response = {
         'jsonrpc': '2.0',
         'id': data.get('id', None),
@@ -563,7 +563,7 @@ def get_nonce(from_account):
     # Count the number of transactions for the from_account
     cursor.execute("SELECT COUNT(*) FROM transactions WHERE from_account = ?", (from_account,))
     count = cursor.fetchone()[0]
-
+    
     # If there's at least one transaction, increment the count to get the next nonce.
     # If there are no transactions, the count will be 0 and that's the nonce you'll use.
     return count + 1 if count else 0
@@ -584,7 +584,7 @@ def handle_raw_transaction(raw_tx):
         #tx_hash = "0x" + decoded_tx.hash().hex()
         #tx_hash = broadcast_transaction(raw_tx)
 
-        tx_hash = get_transaction_hash(raw_tx)
+        tx_hash = get_transaction_hash(raw_tx) 
         print ("TX hash: ", tx_hash)
 
         # Extract details
@@ -608,7 +608,7 @@ def handle_raw_transaction(raw_tx):
         print ("Inserting: ", tx_hash, raw_tx, from_account, to_acc, value, nonce)
         c.execute('''INSERT INTO transactions (tx_hash, raw_tx, from_account, to_account, value, nonce)
                      VALUES (?, ?, ?, ?, ?, ?)''', (tx_hash, raw_tx, from_account.lower(), to_acc.lower(), value, nonce))
-
+        
         # Commit the transaction
         conn.commit()
         # Close the connection
