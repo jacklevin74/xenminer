@@ -7,7 +7,7 @@ ACCOUNT_BALANCES_DB_URL = config(
 )
 CHAIN_ID = config("CHAIN_ID", default="100101")
 CHAIN_NAME = config("CHAIN_NAME", default="xenblocks")
-
+RPC_MAX_BATCH_SIZE = config("RPC_MAX_BATCH_SIZE", default=10)
 
 parser = argparse.ArgumentParser(
     prog="XenBlock RPC/Websocket Server",
@@ -18,7 +18,7 @@ parser.add_argument(
     "--host",
     dest="host",
     action="store",
-    default="127.0.0.1",
+    default="0.0.0.0",
     help="The host to listen on",
 )
 parser.add_argument(

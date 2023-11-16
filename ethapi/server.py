@@ -6,14 +6,18 @@ from flask_cors import CORS
 from jsonrpcserver import method, Result, Success, dispatch, InvalidParams
 from flask import Flask, Response, request
 from web3.types import BlockIdentifier, HexStr, Address
+from eth_utils import is_hex
 from flask_sock import Sock
-
+from config import RPC_MAX_BATCH_SIZE
+import logging
 
 eth_api = EthApi()
 net_api = NetApi()
 app = Flask(__name__)
 sock = Sock(app)
 CORS(app)
+
+logger = logging.getLogger(__name__)
 
 
 @app.route("/")
@@ -25,8 +29,13 @@ def index() -> str:
 @app.route("/", methods=["POST"])
 @cross_origin()
 def rpc() -> Response:
+    data = request.get_data().decode()
+    if isinstance(data, list) and len(data) > RPC_MAX_BATCH_SIZE:
+        logger.error("batch size too large %d > %d", len(data), RPC_MAX_BATCH_SIZE)
+        return Response("Batch size too large", status=400)
+
     return Response(
-        dispatch(request.get_data().decode()), content_type="application/json"
+        dispatch(data), content_type="application/json"
     )
 
 
@@ -70,7 +79,11 @@ def eth_getBlockByHash(block_hash: HexStr, full_tx=False) -> Result:
 
 @method
 def eth_getBalance(address: str, block_number: BlockIdentifier) -> Result:
-    balance = eth_api.get_balance(Address(bytes.fromhex(address)), block_number)
+    if not isinstance(address, str) or not is_hex(address):
+        return InvalidParams("address must be a hex string")
+
+    address_bytes = Address(bytes.fromhex(address.replace("0x", "")))
+    balance = eth_api.get_balance(address_bytes, block_number)
     return Success(balance.hex())
 
 

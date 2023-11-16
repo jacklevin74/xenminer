@@ -168,10 +168,9 @@ class EthApi(BaseApi):
             {"address": address, "block_number": block_number},
         ).fetchone()
 
-        print(row)
-
-        if not row:
+        if not row or len(row) < 1 or not row[0]:
             return HexBytes("0x0")
+
         return HexBytes(hex(row[0]))
 
 
