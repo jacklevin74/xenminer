@@ -42,7 +42,7 @@ class EthApi:
             return BlockNumber(0)
         return BlockNumber(row[0])
 
-    def block_by_hash(
+    def get_block_by_hash(
         self, block_hash: BlockIdentifier, full_tx: bool = True
     ) -> BlockData | None:
         """
@@ -88,7 +88,7 @@ class EthApi:
             raise e
         return b
 
-    def block_by_number(
+    def eth_get_block_by_number(
         self, block_number: BlockIdentifier, full_tx: bool = False
     ) -> BlockData | None:
         """
@@ -98,7 +98,7 @@ class EthApi:
         if isinstance(block_number, str) and is_hex(block_number):
             block_number = int(block_number, 16)
 
-        return self.block_by_hash(self._get_block_hash_by_number(block_number), full_tx)
+        return self.get_block_by_hash(self._get_block_hash_by_number(block_number), full_tx)
 
     def _get_block_hash_by_number(
         self, block_number: BlockIdentifier

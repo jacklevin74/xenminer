@@ -2,38 +2,40 @@ from flask import Flask, request, jsonify
 import secrets
 import sqlite3
 from ethereum.transactions import Transaction
-from flask_cors import cross_origin
-from ethapi.api import EthApi
-from ethapi.utils import encode_block
-from flask import abort
+from ethereum.utils import decode_hex
 import rlp
+from rlp import encode
 from web3 import Web3
-from flask_cors import CORS
-import logging
+import time
 
-eth_api = EthApi("sqlite:///blockchain.db")
+from flask_cors import cross_origin
+
+
 app = Flask(__name__)
+
+from flask_cors import CORS
+
 CORS(app)
-
-logging.basicConfig(level=logging.INFO)
-
 
 @app.route('/')
 @cross_origin()
 def hello_world():
-    return 'ok'
+    return 'Hello, World!'
 
+# Initialize eth_blockNumber
+current_block_number = 0x2234
 
 # Function to fetch balance from SQLite database
+
 def validate_transaction(tx):
     # Validate the transaction (this is a placeholder; your validation logic goes here)
     return True
-
 
 def broadcast_transaction(tx):
     # Broadcast the transaction to the network (this is a placeholder; your broadcast logic goes here)
     # Returning a fake hash for demonstration
     return "0x" + tx.hash.hex()
+
 
 
 def get_xuni_account_count(account_name):
@@ -42,7 +44,7 @@ def get_xuni_account_count(account_name):
     cursor = conn.cursor()
 
     try:
-        # Run the SQL querye
+        # Run the SQL query
         cursor.execute("SELECT COUNT(*) as n FROM xuni WHERE account = ?", (account_name,))
         data = cursor.fetchone()
 
@@ -56,13 +58,14 @@ def get_xuni_account_count(account_name):
             return -1  # can use -1 or another indicator to show that account was not found
 
     except sqlite3.Error as e:
-        logging.error("Database error: %s", e)
+        print("Database error:", e)
         # Close database connection in case of an error
         conn.close()
         return -2  # can use -2 or another indicator to show that there was a database error
 
 
 # Function to update the account balances in the super_blocks table
+
 def transfer(from_account, to_account, value):
     try:
         conn_cache = sqlite3.connect("cache.db")
@@ -86,7 +89,7 @@ def transfer(from_account, to_account, value):
         #cursor.execute("SELECT super_block_count FROM super_blocks WHERE LOWER(account) = ?", (from_account,))
 
         #row = cursor.fetchone()
-        
+
         #if row:
         #    current_balance = row[0]
         #    if current_balance < value:
@@ -114,32 +117,34 @@ def transfer(from_account, to_account, value):
         #""", (value, to_account))
 
         #if cursor.rowcount == 0:
-            #print(f"Account {to_account} not found. Inserting a new row.")
-            #cursor.execute("INSERT INTO super_blocks (account, super_block_count) VALUES (?, ?)", (to_account, value))
+        #print(f"Account {to_account} not found. Inserting a new row.")
+        #cursor.execute("INSERT INTO super_blocks (account, super_block_count) VALUES (?, ?)", (to_account, value))
 
         # Commit and close
         #conn.commit()
         conn.close()
 
     except sqlite3.Error as e:
-        logging.error("SQLite error occurred: %s", e)
+        print("SQLite error occurred:", e)
         if conn:
             conn.rollback()
-            logging.error("Transaction rolled back.")
+            print("Transaction rolled back.")
         raise
 
 
 def get_xblk_account_count(account):
+
     try:
+
         conn = sqlite3.connect("cache.db")
         cursor_cache = conn.cursor()
 
         cursor_cache.execute("SELECT super_blocks FROM cache_table WHERE LOWER(account) = LOWER(?)", (account,))
-        logging.debug("Account: %s", account)
+        print ("Account: ", account)
         row = cursor_cache.fetchone()
         return row[0] if row else 0
     except Exception as e:
-        logging.error("Database error:", e)
+        print("Database error:", e)
         return 0
     finally:
         if conn:
@@ -157,19 +162,18 @@ def get_balance_from_db(account):
         query = "SELECT super_block_count FROM super_blocks WHERE LOWER(account) = LOWER(?)"
         #print(f"Executing SQL query: {query} with account: {account}")  # Print the query and account to standard output
         #cursor.execute("SELECT super_block_count FROM super_blocks WHERE LOWER(account) = LOWER(?)", (account,))
-        print("Account: ", account)
+        print ("Account: ", account)
         cursor_cache.execute("SELECT total_blocks FROM cache_table WHERE LOWER(account) = ?", (account.lower(),))
         row = cursor_cache.fetchone()
-        print("Balance for ", account, row[0] * 10 if row else 0)  # Modified this line to handle None
+        print ("Balance for ", account, row[0] * 10 if row else 0)  # Modified this line to handle None
         return row[0] * 10 if row else 0
     except Exception as e:
-        logging.error("Database error: %s", e)
+        print("Database error:", e)
         return 0
     finally:
         if conn:
             conn.close()
             conn_cache.close()
-
 
 def rlp_encode(input_string):
     if len(input_string) == 1 and ord(input_string) < 0x80:
@@ -181,12 +185,13 @@ def rlp_encode(input_string):
         return chr(0xb7 + length_of_length) + str(len(input_string)) + input_string
 
 
+
 def handle_eth_call(data):
-    logging.debug("In handle_eth_call function: %s", data)
-    
+    print("In handle_eth_call function: ", data)
+
     # Check if 'data' key exists
     if 'params' not in data or not isinstance(data['params'], list) or len(data['params']) == 0 or 'data' not in data['params'][0]:
-        logging.error("Data missing: %s", data)
+        print ("Data missing: ", data)
         response = "0x123456"
         return response
 
@@ -213,10 +218,10 @@ def handle_eth_call(data):
     function_data = data['params'][0]['data']
     function_signature = function_data[:10]
     address_queried = function_data[10:74]
-    logging.debug("Function Signature: %s", function_signature)
+    print(f"Function Signature: {function_signature}")
 
     if function_signature == '0x313ce567':  # decimals function
-        logging.debug("RETURN DECIMALS")
+        print("RETURN DECIMALS")
         decimals = 18
         response = '0x' + hex(decimals)[2:].zfill(64)
 
@@ -225,14 +230,14 @@ def handle_eth_call(data):
         length_in_hex = hex(len(token_name))[2:].zfill(64)
         encoded_name = token_name.encode().hex().ljust(64, '0')
         response = '0x' + '0000000000000000000000000000000000000000000000000000000000000020' + length_in_hex + encoded_name
-        logging.debug("RETURN NAME: %s", token_name)
+        print("RETURN NAME: ", token_name)
 
     elif function_signature == '0x95d89b41':  # symbol function
         symbol = contract_data[target_address]["symbol"]
         length_in_hex = hex(len(symbol))[2:].zfill(64)
         encoded_symbol = symbol.encode().hex().ljust(64, '0')
         response = '0x' + '0000000000000000000000000000000000000000000000000000000000000020' + length_in_hex + encoded_symbol
-        logging.debug("RETURN SYMBOL: %s", symbol)
+        print("RETURN SYMBOL: ", symbol)
 
     elif function_signature == '0x70a08231':  # balanceOf function
         address_queried = function_data[34:74].lower()
@@ -247,8 +252,9 @@ def handle_eth_call(data):
             balance = 0
 
         response = '0x' + hex(balance)[2:].zfill(64)
-        logging.debug("RETURN BALANCE for: %s", address_queried)
-        logging.debug("BALANCE is: %s", balance)
+        print("RETURN BALANCE for: ", address_queried)
+        print("BALANCE is: ", balance)
+
 
     else:
         response = {
@@ -260,39 +266,88 @@ def handle_eth_call(data):
             }
         }
 
-    logging.debug(response)
+    print(response)
     return response
+
+
+def handle_eth_call2(data):
+    print("In handle_eth_call functioni:  ", data)
+
+    # Initialize the response to None
+    response = None
+
+    # Check if 'data' key exists
+    if 'params' not in data or not isinstance(data['params'], list) or len(data['params']) == 0 or 'data' not in data['params'][0]:
+        print ("Data missing: ", data)
+        return {
+            "id": data['id'],
+            "jsonrpc": "2.0",
+            "result": "0x123456"
+        }
+
+    # Extracting the relevant details from the data
+    target_address = data['params'][0]['to'].lower()
+
+    # Checking if the target address matches
+    if target_address != "0x999999cf1046e68e36e1aa2e0e07105eddd00002":
+        return {
+            "id": data['id'],
+            "jsonrpc": "2.0",
+            "error": {
+                "code": -32000,
+                "message": "Unsupported contract address"
+            }
+        }
+
+    function_data = data['params'][0]['data']
+    function_signature = function_data[:10]
+    address = function_data[10:74]
+    print(f"Function Signature: {function_signature}")
+
+    if function_signature == '0x313ce567':
+        # decimals function
+        decimals = 18  # XUNI has 18 decimals
+        response = hex(decimals)
+    elif function_signature == '0x95d89b41':
+        # symbol function
+        symbol = "XUNI"  # Ticker symbol for the token
+        response = '0x' + symbol.encode().hex()
+    elif function_signature in ['0x01ffc9a7', '0x70a08231']:
+        # balanceOf function
+        balance = 1000  # Fetch the balance for the provided address from your database or wherever you store it
+        response = '0x' + hex(balance)[2:].zfill(64)  # Convert to hex and pad to 64 characters
+
 
 
 @app.route('/', methods=['POST'])
 @cross_origin()
 def index():
     data = request.get_json()
-    logging.info("Received data: %s", data)  # Print received queries to the screen
+    global current_block_number
+    print("Received data:", data)  # Print received queries to the screen
     if not data:
         abort(400, description="No data provided")
 
-    if isinstance(data, list):
-        # Handle batch request
-        response = []
-        for item in data:
-            response.append(handle_rcp_call(item))
-    else:
-        response = handle_rcp_call(data)
+    if data['jsonrpc'] != '2.0':
+        response = {'jsonrpc': '2.0', 'error': {'code': -32600, 'message': 'Invalid Request'}, 'id': None}
+        print("Sending response:", response)  # Print response to the screen
+        return jsonify(response), 400
 
-    logging.debug("sending response: %s", response)
-    return jsonify(response)
-
-
-def handle_rcp_call(data):
     # Initialize the result variable
     result = None
 
-    if data['jsonrpc'] != '2.0':
-        return {'jsonrpc': '2.0', 'error': {'code': -32600, 'message': 'Invalid Request'}, 'id': None}
-
     if data['method'] == 'eth_blockNumber':
-        result = hex(eth_api.block_number())
+        current_block_number += 1  # Increment block number
+        result = hex(current_block_number)
+
+        response = {
+            'jsonrpc': '2.0',
+            'id': data.get('id', None),
+            'result': result
+        }
+
+        print("Sending response:", response)  # Print response to the screen
+        return jsonify(response)
 
     elif data['method'] == 'eth_getBalance':
         account = data['params'][0]  # Convert account to lower case to ensure it matches
@@ -304,12 +359,15 @@ def handle_rcp_call(data):
         # you would usually perform an actual gas estimation based on the
         # transaction details.
         result = '0x5208'  # 21000 in hex, a common gas cost for simple transfers
-    
+
+    #elif data['method'] == 'eth_call':
+    #    result = '0x123456'
+
     elif data['method'] == 'eth_call':
-        print("ETH CALL RECEIVED: ")
-        print(data)
+        print ("ETH CALL RECEIVED: ")
+        print (data)
         result = handle_eth_call(data)
-    
+
     elif data['method'] == 'eth_chainId':
         result = '0x18705'  # Mainnet
 
@@ -370,10 +428,10 @@ def handle_rcp_call(data):
 
         # Fetch the nonce from your database using the get_nonce function
         nonce = get_nonce(address)
-        print("Returning nonce: ", nonce)
+        print ("Returning nonce: ", nonce)
         result = hex(nonce)
-        
-        print("Returning nonce hex: ", result)
+
+        print ("Returning nonce hex: ", result)
 
     elif data['method'] == '1eth_getTransactionCount':
         address = data['params'][0].lower()
@@ -385,7 +443,8 @@ def handle_rcp_call(data):
             "0xc855fd5aa2829799dde83b43ac33651e46f610bb": 10
         }
         result = hex(nonces.get(address, 0))
-        print("Returning nonce hex: ", result)
+        print ("Returning nonce hex: ", result)
+
 
     elif data['method'] == 'Xeth_getBlockByNumber':
         result = {
@@ -395,45 +454,76 @@ def handle_rcp_call(data):
         }
 
     elif data['method'] == 'eth_getBlockByNumber':
-        if "params" not in data or len(data["params"]) < 2:
-            return {'jsonrpc': '2.0', 'error': {'code': -32602, 'message': 'Invalid params'}, 'id': data.get('id', None)}
+        print("RETURN BLOCK DATA")
+        requested_block_number = data['params'][0]
+        current_timestamp = int(time.time())  # Assuming you've imported the time module
 
-        block_number = data['params'][0]
-        full_tx = data['params'][1]
-        res = eth_api.block_by_number(block_number, full_tx=full_tx)
-        if res:
-            result = encode_block(res)
-    
+        result = {
+            'number': requested_block_number,
+            'hash': '0x1234567890abcdef',  # Mock hash, adjust as needed
+            'timestamp': hex(current_timestamp),
+            'transactions': [],
+            'parentHash': '0xabcdef1234567890',  # Mock parent hash
+            'miner': '0xdeadbeefdeadbeef',      # Mock miner address
+            # Add other block attributes if needed
+        }
+
+
     elif data['method'] == 'net_version':
         result = '1'  # Mainnet
 
-    elif data['method'] == 'eth_getBlockByHash':
-        if "params" not in data or len(data["params"]) < 2:
-            return {'jsonrpc': '2.0', 'error': {'code': -32602, 'message': 'Invalid params'}, 'id': data.get('id', None)}
 
+    elif data['method'] == 'eth_getBlockByHash':
         block_hash = data['params'][0]
         full_tx = data['params'][1]
-        res = eth_api.block_by_hash(block_hash, full_tx)
-        if res:
-            result = encode_block(res)
+
+        # Fetch block data by block hash.
+        # For demonstration purposes, let's use a mock block.
+        mock_block = {
+            'number': '0x1b4',
+            'hash': block_hash,
+            'transactions': ['0x123...', '0x124...'] if not full_tx else [
+                {
+                    'hash': '0x123...',
+                    'from': '0xabc...',
+                    'to': '0xdef...',
+                    'value': '0x1'
+                },
+                {
+                    'hash': '0x124...',
+                    'from': '0xghi...',
+                    'to': '0xjkl...',
+                    'value': '0x2'
+                }
+            ]
+            # ... (other block fields)
+        }
+
+        result = mock_block
 
     elif data['method'] == 'eth_gasPrice':
         result = '0x3B9ACA00'  # Example gas price, 1 Gwei in hexadecimal
 
     elif data['method'] == 'eth_sendRawTransaction':
-        print(data)
+        print (data)
         raw_tx = data['params'][0]
         print("Raw TX: ", raw_tx)
         try:
             handle_raw_transaction(raw_tx)
+            #tx_hash = broadcast_transaction(raw_tx)
             tx_hash = get_transaction_hash(raw_tx)
-            print("Returning results from eth_sendRawTransaction ", tx_hash)
+            print ("Returning results from eth_sendRawTransaction ", tx_hash)
             result = tx_hash
         except Exception as e:
-            return {'jsonrpc': '2.0', 'error': {'code': -32000, 'message': f'Exception: {e}'}, 'id': data['id']}
+            result = {'jsonrpc': '2.0', 'error': {'code': -32000, 'message': f'Exception: {e}'}, 'id': data['id']}
+            print("Sending response:", result)  # Print response to the screen
+            return result
+
 
     else:
-        return {'jsonrpc': '2.0', 'error': {'code': -32601, 'message': 'Method not found'}, 'id': data.get('id', None)}
+        response = {'jsonrpc': '2.0', 'error': {'code': -32601, 'message': 'Method not found'}, 'id': data.get('id', None)}
+        print("Sending response:", response)  # Print response to the screen
+        return jsonify(response), 400
 
     response = {
         'jsonrpc': '2.0',
@@ -441,7 +531,19 @@ def handle_rcp_call(data):
         'result': result
     }
 
-    return response
+    print("Sending Final response:", response)  # Print response to the screen
+    return jsonify(response)
+
+
+def broadcast_transaction(raw_tx):
+    # Generate a 64-character long hex string as a fake Ethereum transaction hash
+    fake_tx_hash = '0x' + secrets.token_hex(32)
+    return fake_tx_hash
+
+from Crypto.Hash import keccak
+import rlp
+from coincurve import PublicKey
+from web3 import Web3
 
 
 def get_recovered_address(raw_tx):
@@ -461,7 +563,7 @@ def get_nonce(from_account):
     # Count the number of transactions for the from_account
     cursor.execute("SELECT COUNT(*) FROM transactions WHERE from_account = ?", (from_account,))
     count = cursor.fetchone()[0]
-    
+
     # If there's at least one transaction, increment the count to get the next nonce.
     # If there are no transactions, the count will be 0 and that's the nonce you'll use.
     return count + 1 if count else 0
@@ -469,7 +571,6 @@ def get_nonce(from_account):
 
 def get_transaction_hash(raw_tx):
     return Web3.keccak(hexstr=raw_tx).hex()
-
 
 def handle_raw_transaction(raw_tx):
     # Decode the raw transaction
@@ -483,8 +584,8 @@ def handle_raw_transaction(raw_tx):
         #tx_hash = "0x" + decoded_tx.hash().hex()
         #tx_hash = broadcast_transaction(raw_tx)
 
-        tx_hash = get_transaction_hash(raw_tx) 
-        print("TX hash: ", tx_hash)
+        tx_hash = get_transaction_hash(raw_tx)
+        print ("TX hash: ", tx_hash)
 
         # Extract details
         from_account = decoded_tx.sender  # Or use another way to get sender address
@@ -504,16 +605,17 @@ def handle_raw_transaction(raw_tx):
 
         # Insert the new record into the transactions table
         to_acc = "0x" + to_account.hex()
-        print("Inserting: ", tx_hash, raw_tx, from_account, to_acc, value, nonce)
+        print ("Inserting: ", tx_hash, raw_tx, from_account, to_acc, value, nonce)
         c.execute('''INSERT INTO transactions (tx_hash, raw_tx, from_account, to_account, value, nonce)
                      VALUES (?, ?, ?, ?, ?, ?)''', (tx_hash, raw_tx, from_account.lower(), to_acc.lower(), value, nonce))
-        
+
         # Commit the transaction
         conn.commit()
         # Close the connection
         conn.close()
 
         transfer (validated_from, to_account.hex(), value/1e18)
+
 
         # Print the decoded transaction details
         print(f"From Account: {validated_from}")
@@ -526,7 +628,6 @@ def handle_raw_transaction(raw_tx):
 
     except Exception as e:
         print(f"An error occurred: {e}")
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5555, debug=True)

@@ -6,3 +6,4 @@ web3==6.11.1
 sqlalchemy
 hexbytes
 eth-utils
+flask-sock
