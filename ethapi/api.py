@@ -5,6 +5,7 @@ from web3.types import BlockNumber, Timestamp, BlockData, BlockIdentifier
 from sqlalchemy import text
 from sqlalchemy import create_engine
 import logging
+from eth_utils import is_hex
 
 DEFAULT_DB_URL = "sqlite+pysqlite:///:memory:"
 DEFAULT_LOG_LEVEL = logging.INFO
@@ -17,9 +18,29 @@ class EthApi:
         """
         self.logger = logging.getLogger(__name__)
         self.engine = create_engine(
-            db_url, echo=True, connect_args={"check_same_thread": False}
+            db_url, echo=False, connect_args={"check_same_thread": False}
         )
         self.conn = self.engine.connect()
+
+    def block_number(self) -> BlockNumber:
+        """
+        Returns the current block number
+        """
+        logging.debug("block_number()")
+        res = self.conn.execute(
+            text(
+                """
+                SELECT id - 1
+                FROM blockchain
+                ORDER BY id DESC
+                LIMIT 1
+                """
+            )
+        )
+        row = res.fetchone()
+        if not row:
+            return BlockNumber(0)
+        return BlockNumber(row[0])
 
     def block_by_hash(
         self, block_hash: BlockIdentifier, full_tx: bool = True
@@ -27,7 +48,7 @@ class EthApi:
         """
         Returns information of the block matching the given block hash
         """
-        logging.debug("block_by_hash")
+        logging.debug("block_by_hash(%s, %s)", block_hash, full_tx)
         if not block_hash:
             return None
 
@@ -51,7 +72,7 @@ class EthApi:
         if not row:
             return None
 
-        self.logger.debug("block_by_hash", {"row": row})
+        self.logger.debug("found blockchain record %s", row)
 
         b = BlockData()
 
@@ -73,16 +94,19 @@ class EthApi:
         """
         Returns information of the block matching the given block number.
         """
-        logging.debug("block_by_number", {block_number, full_tx})
+        logging.debug("block_by_number(%s, %s)", block_number, full_tx)
+        if isinstance(block_number, str) and is_hex(block_number):
+            block_number = int(block_number, 16)
+
         return self.block_by_hash(self._get_block_hash_by_number(block_number), full_tx)
 
     def _get_block_hash_by_number(
         self, block_number: BlockIdentifier
     ) -> BlockIdentifier | None:
-        logging.debug("_get_block_hash_by_number")
+        logging.debug("_get_block_hash_by_number(%s)", block_number)
 
         if block_number == "earliest":
-            block_number = 1
+            block_number = 0
 
         if block_number == "latest":
             res = self.conn.execute(
@@ -104,7 +128,7 @@ class EthApi:
                     WHERE id = :block_number
                     """
                 ),
-                {"block_number": block_number},
+                {"block_number": block_number + 1},
             )
         row = res.fetchone()
         if not row:

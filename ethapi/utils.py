@@ -9,11 +9,14 @@ def encode_block(block: BlockData) -> dict[str, str]:
 
     eb = block.copy()
 
+    if "parentHash" in block:
+        eb["parentHash"] = block["parentHash"].hex()
+    else:
+        eb["parentHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+
     # HexBytes to hex string
     for key in [
         "hash",
-        "parentHash",
-        "nonce",
         "sha3Uncles",
         "logsBloom",
         "transactionsRoot",
@@ -25,7 +28,7 @@ def encode_block(block: BlockData) -> dict[str, str]:
         if key in block:
             eb[key] = block[key].hex()  # type: ignore
         else:
-            eb[key] = "0x0"  # type: ignore
+            eb[key] = "0x0000000000000000000000000000000000000000"  # type: ignore
 
     # ints to hex strings
     for key in [
@@ -40,8 +43,9 @@ def encode_block(block: BlockData) -> dict[str, str]:
         if key in block:
             eb[key] = hex(block[key])  # type: ignore
         else:
-            eb[key] = "0x0"  # type: ignore
+            eb[key] = "0x0000000000000000000000000000000000000000"  # type: ignore
 
+    eb["nonce"] = "0x0000000000000000"
     eb["transactions"] = []
     eb["uncles"] = []
 
