@@ -34,9 +34,7 @@ def rpc() -> Response:
         logger.error("batch size too large %d > %d", len(data), RPC_MAX_BATCH_SIZE)
         return Response("Batch size too large", status=400)
 
-    return Response(
-        dispatch(data), content_type="application/json"
-    )
+    return Response(dispatch(data), content_type="application/json")
 
 
 @sock.route("/")

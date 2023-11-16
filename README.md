@@ -36,7 +36,12 @@ python3 miner.py
 
 ### Usage
 
-> Run the server
+> Run the server for development
+```shell
+python3 ethapi --dev --verbose
+```
+
+> Run the server for production with Gunicon
 ```shell
 python3 ethapi
 ```
