@@ -9,3 +9,5 @@ eth-utils
 flask-sock
 python-decouple
 gunicorn
+flask_cors
+jsonrpcserver
