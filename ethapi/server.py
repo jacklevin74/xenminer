@@ -6,9 +6,10 @@ from jsonrpcserver import method, Result, Success, dispatch, InvalidParams, Json
 from jsonrpcserver.main import default_validator
 from web3.types import BlockIdentifier, HexStr, Address
 from eth_utils import is_hex
+
+from ethapi.encoder import encode_block, encode_transaction, encode_transaction_receipt
 from ethapi.eth import EthApi
 from ethapi.net import NetApi
-from ethapi.eth import encode_block
 from ethapi.config import RPC_MAX_BATCH_SIZE
 
 
@@ -98,6 +99,42 @@ def eth_getBalance(address: str, block_number: BlockIdentifier) -> Result:
     address_bytes = Address(bytes.fromhex(address.replace("0x", "")))
     balance = eth_api.get_balance(address_bytes, block_number)
     return Success(balance.hex())
+
+
+@method
+def eth_getTransactionByHash(tx_hash: HexStr) -> Result:
+    if not isinstance(tx_hash, str):
+        return InvalidParams("tx_hash must be a hex string")
+    tx = eth_api.get_transaction_by_hash(tx_hash)
+    return Success(encode_transaction(tx))
+
+
+@method
+def eth_getTransactionByBlockNumberAndIndex(
+    block_number: BlockIdentifier, tx_index: int
+) -> Result:
+    tx = eth_api.get_transaction_by_block_number_and_index(
+        block_number, tx_index)
+    return Success(encode_transaction(tx))
+
+
+@method
+def eth_getTransactionByBlockHashAndIndex(
+        block_hash: HexStr,
+        tx_index: int) -> Result:
+    if not isinstance(block_hash, str):
+        return InvalidParams("block_hash must be a hex string")
+
+    tx = eth_api.get_transaction_by_block_hash_and_index(block_hash, tx_index)
+    return Success(encode_transaction(tx))
+
+
+@method
+def eth_getTransactionReceipt(tx_hash: HexStr) -> Result:
+    if not isinstance(tx_hash, str):
+        return InvalidParams("tx_hash must be a hex string")
+    tx_rec = eth_api.get_transaction_receipt(tx_hash)
+    return Success(encode_transaction_receipt(tx_rec))
 
 
 @method

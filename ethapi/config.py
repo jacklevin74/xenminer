@@ -14,8 +14,14 @@ RPC_MAX_BATCH_SIZE = int(config("RPC_MAX_BATCH_SIZE", default=1000))
 RPC_PORT = int(config("RPC_PORT", default=8545))
 RPC_HOST = config("RPC_HOST", default="0.0.0.0")
 
+_args_cache = None
+
 
 def cli_args():
+    global _args_cache
+    if _args_cache:
+        return _args_cache
+
     parser = argparse.ArgumentParser(
         prog="Xenium RPC/Websocket Server",
         description="Serves RPC and Websocket requests for Xenium",
@@ -51,4 +57,5 @@ def cli_args():
     if unknown:
         logging.warning("Unknown args: %s", unknown)
 
+    _args_cache = args
     return args

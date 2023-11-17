@@ -1,5 +1,13 @@
 from hexbytes import HexBytes
-from web3.types import BlockNumber, Timestamp, BlockData, BlockIdentifier, Address
+from web3.types import (
+    BlockNumber,
+    Timestamp,
+    BlockData,
+    TxData,
+    BlockIdentifier,
+    Address,
+    HexStr,
+)
 from sqlalchemy import text
 from eth_utils import is_hex
 from ethapi.base import BaseApi
@@ -143,21 +151,14 @@ class EthApi(BaseApi):
         return 0
 
     def get_balance(
-            self,
-            address: Address,
-            block_number: BlockIdentifier) -> HexBytes:
+        self, address: Address, block_identifier: BlockIdentifier
+    ) -> HexBytes:
         """
         Returns the balance of the given address
         """
-        self.logger.debug("eth_getBalance(%s, %s)", address, block_number)
+        self.logger.debug("eth_getBalance(%s, %s)", address, block_identifier)
 
-        if block_number == "latest":
-            block_number = self.block_number()
-        elif block_number == "earliest":
-            block_number = 0
-        elif isinstance(block_number, str) and is_hex(block_number):
-            block_number = int(block_number, 16)
-
+        block_number = self._get_block_number_from_identifier(block_identifier)
         row = self.account_balances_db.execute(
             text(
                 """
@@ -176,55 +177,82 @@ class EthApi(BaseApi):
 
         return HexBytes(hex(row[0]))
 
+    def get_transaction_by_hash(self, tx_hash: HexStr) -> TxData | None:
+        """
+        Returns the transaction matching the given transaction hash
+        """
+        self.logger.debug("get_transaction_by_hash(%s)", tx_hash)
+        if not tx_hash:
+            return None
 
-def encode_block(block: BlockData) -> dict[str, str]:
-    """
-    Encodes the web3 block object into an Etheruem RPC Block response dictionary
-    which is ready to be serialized into JSON
-    """
+        # TODO: implement
+        return None
 
-    eb = block.copy()
+    def _get_block_number_from_identifier(
+        self, block_identifier: BlockIdentifier
+    ) -> BlockNumber:
+        if block_identifier == "earliest":
+            return BlockNumber(0)
 
-    if "parentHash" in block:
-        eb["parentHash"] = block["parentHash"].hex()
-    else:
-        eb[
-            "parentHash"
-        ] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+        if isinstance(block_identifier, str) and is_hex(block_identifier):
+            return BlockNumber(int(block_identifier, 16))
 
-    # HexBytes to hex string
-    for key in [
-        "hash",
-        "sha3Uncles",
-        "logsBloom",
-        "transactionsRoot",
-        "stateRoot",
-        "receiptsRoot",
-        "miner",
-        "extraData",
-    ]:
-        if key in block:
-            eb[key] = block[key].hex()  # type: ignore
-        else:
-            eb[key] = "0x0000000000000000000000000000000000000000"  # type: ignore
+        return self.block_number()
 
-    # ints to hex strings
-    for key in [
-        "number",
-        "difficulty",
-        "totalDifficulty",
-        "size",
-        "gasLimit",
-        "gasUsed",
-        "timestamp",
-    ]:
-        if key in block:
-            eb[key] = hex(block[key])  # type: ignore
-        else:
-            eb[key] = "0x0000000000000000000000000000000000000000"  # type: ignore
+    def _get_transaction_hash_by_block_number_and_index(
+        self, block_number: BlockNumber, index: int
+    ) -> HexBytes | None:
+        # TODO: implement helper function.
+        return None
 
-    eb["nonce"] = "0x0000000000000000"
-    eb["transactions"] = []
-    eb["uncles"] = []
+    def _get_transaction_hash_by_block_hash_and_index(
+        self, block_number: BlockIdentifier, index: int
+    ) -> HexBytes | None:
+        # TODO: implement helper function.
+        return None
 
-    return eb
+    def get_transaction_by_block_number_and_index(
+        self, block_number: BlockNumber, index: int
+    ) -> TxData | None:
+        """
+        Returns the transaction matching the given block number and index
+        """
+        block_hash = self._get_transaction_hash_by_block_number_and_index(
+            block_number, index
+        )
+        return self.get_block_by_hash(block_hash)
+
+    def get_transaction_by_block_hash_and_index(
+        self, block_number: BlockIdentifier, index: int
+    ) -> TxData | None:
+        """
+        Returns the transaction matching the given block hash and index
+        """
+        block_hash = self._get_transaction_hash_by_block_hash_and_index(
+            block_number, index
+        )
+        return self.get_block_by_hash(block_hash)
+
+    def get_transaction_receipt(self, tx_hash: HexStr) -> TxData | None:
+        """
+        Returns the transaction receipt matching the given transaction hash
+        """
+        self.logger.debug("get_transaction_receipt(%s)", tx_hash)
+        if not tx_hash:
+            return None
+
+        # TODO: implement.
+        return None
+
+    def get_transaction_count(
+        self, address: Address, block_identifier: BlockIdentifier
+    ) -> int:
+        """
+        Returns the number of transactions sent from the given address
+        """
+        self.logger.debug(
+            "get_transaction_count(%s, %s)",
+            address,
+            block_identifier)
+        # TODO: implement.
+        return 0
