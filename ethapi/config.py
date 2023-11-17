@@ -1,8 +1,10 @@
-from decouple import config
 import argparse
 import logging
+from decouple import config
 
-BLOCKCHAIN_DB_URL = config("BLOCKCHAIN_DB_URL", default="sqlite:///blockchain.db")
+BLOCKCHAIN_DB_URL = config(
+    "BLOCKCHAIN_DB_URL",
+    default="sqlite:///blockchain.db")
 ACCOUNT_BALANCES_DB_URL = config(
     "ACCOUNT_BALANCES_DB_URL", default="sqlite:///balances6.db"
 )
@@ -40,8 +42,10 @@ def cli_args():
         help="Use the development server instead of gunicorn",
     )
     parser.add_argument(
-        "--verbose", dest="verbose", action="store_true", help="Enable verbose logging"
-    )
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Enable verbose logging")
 
     args, unknown = parser.parse_known_args()
     if unknown:

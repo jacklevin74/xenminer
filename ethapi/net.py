@@ -1,5 +1,5 @@
-from base import BaseApi
-from config import CHAIN_ID
+from ethapi.base import BaseApi
+from ethapi.config import CHAIN_ID
 
 
 class NetApi(BaseApi):

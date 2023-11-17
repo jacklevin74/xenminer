@@ -1,15 +1,15 @@
-from flask_cors import cross_origin
-from eth import EthApi
-from eth import encode_block
-from net import NetApi
-from flask_cors import CORS
-from jsonrpcserver import method, Result, Success, dispatch, InvalidParams
+import logging
 from flask import Flask, Response, request
+from flask_cors import CORS, cross_origin
+from flask_sock import Sock
+from jsonrpcserver import method, Result, Success, dispatch, InvalidParams
 from web3.types import BlockIdentifier, HexStr, Address
 from eth_utils import is_hex
-from flask_sock import Sock
-from config import RPC_MAX_BATCH_SIZE
-import logging
+from ethapi.eth import EthApi
+from ethapi.net import NetApi
+from ethapi.eth import encode_block
+from ethapi.config import RPC_MAX_BATCH_SIZE
+
 
 eth_api = EthApi()
 net_api = NetApi()
@@ -31,7 +31,10 @@ def index() -> str:
 def rpc() -> Response:
     data = request.get_data().decode()
     if isinstance(data, list) and len(data) > RPC_MAX_BATCH_SIZE:
-        logger.error("batch size too large %d > %d", len(data), RPC_MAX_BATCH_SIZE)
+        logger.error(
+            "batch size too large %d > %d",
+            len(data),
+            RPC_MAX_BATCH_SIZE)
         return Response("Batch size too large", status=400)
 
     return Response(dispatch(data), content_type="application/json")
@@ -50,9 +53,9 @@ def ping() -> Result:
     return Success("pong")
 
 
-"""
-eth methods
-"""
+###############
+# eth methods #
+###############
 
 
 @method
@@ -62,7 +65,9 @@ def eth_blockNumber() -> Result:
 
 
 @method
-def eth_getBlockByNumber(block_number: BlockIdentifier, full_tx=False) -> Result:
+def eth_getBlockByNumber(
+        block_number: BlockIdentifier,
+        full_tx=False) -> Result:
     block = eth_api.eth_get_block_by_number(block_number, full_tx)
     return Success(encode_block(block))
 
@@ -100,9 +105,9 @@ def eth_gasPrice() -> Result:
     return Success(eth_api.gas_price())
 
 
-"""
-net methods 
-"""
+###############
+# net methods #
+###############
 
 
 @method

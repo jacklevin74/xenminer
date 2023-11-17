@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy import create_engine
-from config import cli_args, ACCOUNT_BALANCES_DB_URL, BLOCKCHAIN_DB_URL
+from ethapi.config import cli_args, ACCOUNT_BALANCES_DB_URL, BLOCKCHAIN_DB_URL
 
 
 class BaseApi:

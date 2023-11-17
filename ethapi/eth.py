@@ -2,8 +2,8 @@ from hexbytes import HexBytes
 from web3.types import BlockNumber, Timestamp, BlockData, BlockIdentifier, Address
 from sqlalchemy import text
 from eth_utils import is_hex
-from base import BaseApi
-from config import CHAIN_ID
+from ethapi.base import BaseApi
+from ethapi.config import CHAIN_ID
 
 
 class EthApi(BaseApi):
@@ -142,7 +142,10 @@ class EthApi(BaseApi):
         # TODO: implement
         return 0
 
-    def get_balance(self, address: Address, block_number: BlockIdentifier) -> HexBytes:
+    def get_balance(
+            self,
+            address: Address,
+            block_number: BlockIdentifier) -> HexBytes:
         """
         Returns the balance of the given address
         """
