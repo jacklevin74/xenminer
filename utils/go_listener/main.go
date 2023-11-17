@@ -7,12 +7,15 @@ import (
 	"encoding/json"
 	"os"
 	"crypto/sha256"
+	"runtime"
 	"encoding/hex"
 	"fmt"
 	"flag"
 	"context"
 	"github.com/libp2p/go-libp2p-pubsub"
 	"github.com/gorilla/websocket"
+        "net/http"
+        "net/url"
 	"github.com/libp2p/go-libp2p"
 //	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -23,6 +26,49 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
+func reportGCTime() {
+	for {
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		fmt.Printf("Total GC time: %v ms\n", m.PauseTotalNs/1e6)
+
+		// Sleep for 5 seconds before reporting again.
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func verifyArgon2HashRemotely(hashToVerify, key string) (bool, string, error) {
+    // Construct the request URL
+    verifyURL := "http://209.124.84.6:5011/verify"
+    //verifyURL := "http://localhost:5011/verify"
+
+    // Create form data
+    formData := url.Values{}
+    formData.Set("hashToVerify", hashToVerify)
+    formData.Set("key", key)
+
+    // Create a new request
+    resp, err := http.PostForm(verifyURL, formData)
+    if err != nil {
+        // Handle error
+        return false, "", err
+    }
+    defer resp.Body.Close()
+
+    // Check the response code
+    if resp.StatusCode != http.StatusOK {
+        // Verification failed
+        return false, "", nil
+    }
+
+    // If verification succeeded, compute the truncated hash
+    shaHash := sha256.Sum256([]byte(hashToVerify))
+    truncatedHash := hex.EncodeToString(shaHash[:])[:5]
+
+    // Return the results
+    return true, truncatedHash, nil
+}
+
 // handleStream is the stream handler for incoming streams.
 // It should contain the logic to handle the incoming stream data.
 func handleStream(stream network.Stream) {
@@ -32,10 +78,31 @@ func handleStream(stream network.Stream) {
 	defer stream.Close()
 }
 
+func printMemStats() {
+        var m runtime.MemStats
+
+        for {
+                runtime.ReadMemStats(&m)
+
+                fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+                fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+                fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+                fmt.Printf("\tNumGC = %v\n", m.NumGC)
+
+                time.Sleep(1 * time.Second)
+        }
+}
+
+func bToMb(b uint64) uint64 {
+        return b / 1024 / 1024
+}
+
 
 func main() {
 
 	// log2.SetAllLoggers(log2.LevelDebug)
+	go printMemStats()
+	go reportGCTime()
 
         // Accept the bootstrap node's multiaddress from the command line.
 	bootstrapAddr := flag.String("bootstrap", "", "The multiaddress of the bootstrap node")
@@ -174,12 +241,13 @@ func main() {
 		var bool_flag = false
 
 		// Perform Argon2 verification for the single block ID
-		if verifyArgon2Hash(hashToVerify, key) {
-			var shaHash = sha256.Sum256([]byte(hashToVerify))
+
+	        bool_flag, truncatedHash, err = verifyArgon2HashRemotely(hashToVerify, key)
+		if bool_flag {
+			//var shaHash = sha256.Sum256([]byte(hashToVerify))
 			// Convert the SHA256 hash to a hexadecimal string and take the first 5 characters
-			truncatedHash = hex.EncodeToString(shaHash[:])[:5]
-			bool_flag = true
-			//fmt.Printf("Verification success for block ID %s\n", blockID)
+			// truncatedHash = hex.EncodeToString(shaHash[:])[:5]
+			fmt.Printf("Verification success for block ID %s\n", blockID)
 		} else {
 			fmt.Printf("Local Verification failed for block ID %s\n", blockID)
 			continue
@@ -192,6 +260,13 @@ func main() {
 		fmt.Printf("Local Verification time for block ID %s: %s %s\n", blockID,truncatedHash,elapsed)
 
 		if bool_flag {
+
+			for _, peerID := range kadDHT.Host().Peerstore().Peers() {
+                        	latency := kadDHT.Host().Peerstore().LatencyEWMA(peerID)
+				if latency > 0 {
+                        	    fmt.Printf("Latency to peer %s: %s %v\n", peerID.String(), latency, h.Peerstore().Addrs(peerID)[0])
+					}
+				}
 
 			responseData := map[string]interface{}{
 				"peer_id":    h.ID().String(),
