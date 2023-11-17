@@ -2,7 +2,8 @@ import logging
 from flask import Flask, Response, request
 from flask_cors import CORS, cross_origin
 from flask_sock import Sock
-from jsonrpcserver import method, Result, Success, dispatch, InvalidParams
+from jsonrpcserver import method, Result, Success, dispatch, InvalidParams, JsonRpcError
+from jsonrpcserver.main import default_validator
 from web3.types import BlockIdentifier, HexStr, Address
 from eth_utils import is_hex
 from ethapi.eth import EthApi
@@ -20,6 +21,19 @@ CORS(app)
 logger = logging.getLogger(__name__)
 
 
+def _validator(data):
+    """
+    Validate the request data
+    """
+    if isinstance(data, list) and len(data) > RPC_MAX_BATCH_SIZE:
+        logger.error(
+            "batch size too large %s > %s",
+            len(data),
+            RPC_MAX_BATCH_SIZE)
+        raise JsonRpcError(400, "Batch size too large")
+    return default_validator(data)
+
+
 @app.route("/")
 @cross_origin()
 def index() -> str:
@@ -30,14 +44,10 @@ def index() -> str:
 @cross_origin()
 def rpc() -> Response:
     data = request.get_data().decode()
-    if isinstance(data, list) and len(data) > RPC_MAX_BATCH_SIZE:
-        logger.error(
-            "batch size too large %d > %d",
-            len(data),
-            RPC_MAX_BATCH_SIZE)
-        return Response("Batch size too large", status=400)
-
-    return Response(dispatch(data), content_type="application/json")
+    logger.debug("rpc request: %s", data)
+    return Response(
+        dispatch(data, validator=_validator), content_type="application/json"
+    )
 
 
 @sock.route("/")

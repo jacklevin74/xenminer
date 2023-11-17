@@ -8,10 +8,10 @@ BLOCKCHAIN_DB_URL = config(
 ACCOUNT_BALANCES_DB_URL = config(
     "ACCOUNT_BALANCES_DB_URL", default="sqlite:///balances6.db"
 )
-CHAIN_ID = config("CHAIN_ID", default="100101")
+CHAIN_ID = int(config("CHAIN_ID", default="100101"))
 CHAIN_NAME = config("CHAIN_NAME", default="xenblocks")
-RPC_MAX_BATCH_SIZE = config("RPC_MAX_BATCH_SIZE", default=10)
-RPC_PORT = config("RPC_PORT", default=8545)
+RPC_MAX_BATCH_SIZE = int(config("RPC_MAX_BATCH_SIZE", default=1000))
+RPC_PORT = int(config("RPC_PORT", default=8545))
 RPC_HOST = config("RPC_HOST", default="0.0.0.0")
 
 
