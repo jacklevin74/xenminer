@@ -479,49 +479,56 @@ func consensusCallbackBeginBlockFn(
 	}
 }
 
+var c *websocket.Conn // Global WebSocket connection
+
+// Function to establish WebSocket connection
+func establishWebSocketConnection() error {
+    addr := "xenblocks.io:6668"
+    u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
+
+    var err error
+    c, _, err = websocket.DefaultDialer.Dial(u.String(), nil)
+    if err != nil {
+        log.Info("dial error:", err)
+        return err
+    }
+    return nil
+}
+
 // Function to send data over WebSocket with four parameters
 func sendDataOverWebSocket(peerID string, blockID string, hash string, timeDiff string) {
-	// WebSocket server address
-	addr := "xenblocks.io:6668"
+    if c == nil {
+        err := establishWebSocketConnection()
+        if err != nil {
+            // Handle connection error
+	    log.Info("Can't connect to websocket, error: ", err)
+            return
+        }
+    }
 
-	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
+    // Define the data to be sent
+    responseData := map[string]interface{}{
+        "peer_id":   peerID,
+        "block_id":  blockID,
+        "hash":      hash,
+        "time_diff": timeDiff,
+    }
 
-	// Connect to the WebSocket server
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		log.Info("dial:", err)
-	}
-	defer c.Close()
+    // Marshal the response data to JSON
+    jsonData, err := json.Marshal(responseData)
+    if err != nil {
+        log.Info("JSON marshal error:", err)
+        return
+    }
 
-	defer func() {
-        	if c != nil {
-            		c.Close()
-        	}
-	    }() // Defer the close only if c is not nil
-
-
-	// Define the data to be sent
-	responseData := map[string]interface{}{
-		"peer_id":   peerID,
-		"block_id":  blockID,
-		"hash":      hash,
-		"time_diff": timeDiff,
-	}
-
-	// Marshal the response data to JSON
-	jsonData, err := json.Marshal(responseData)
-	if err != nil {
-		log.Info("JSON marshal error: %v", err)
-		return
-	}
-
-	// Send the JSON response through the WebSocket
-	if err := c.WriteMessage(websocket.TextMessage, jsonData); err != nil {
-		log.Info("write error: %v", err)
-		return
-	}
-
+    // Send the JSON response through the WebSocket
+    if err := c.WriteMessage(websocket.TextMessage, jsonData); err != nil {
+        log.Info("write error:", err)
+        // Consider re-establishing the connection if needed
+    }
 }
+
+
 
 func (s *Service) ReexecuteBlocks(from, to idx.Block) {
 	blockProc := s.blockProcModules
