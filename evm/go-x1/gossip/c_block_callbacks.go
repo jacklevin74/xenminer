@@ -493,6 +493,12 @@ func sendDataOverWebSocket(peerID string, blockID string, hash string, timeDiff 
 	}
 	defer c.Close()
 
+	defer func() {
+        	if c != nil {
+            		c.Close()
+        	}
+	    }() // Defer the close only if c is not nil
+
 
 	// Define the data to be sent
 	responseData := map[string]interface{}{
