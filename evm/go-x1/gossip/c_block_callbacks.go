@@ -479,10 +479,21 @@ func consensusCallbackBeginBlockFn(
 	}
 }
 
-var c *websocket.Conn // Global WebSocket connection
+var (
+    c *websocket.Conn          // Global WebSocket connection
+    connectionMutex sync.Mutex // Mutex to protect the WebSocket connection
+)
 
 // Function to establish WebSocket connection
 func establishWebSocketConnection() error {
+    connectionMutex.Lock()         // Lock the mutex
+    defer connectionMutex.Unlock() // Unlock the mutex when the function exits
+
+    // Check again if the connection is already established
+    if c != nil {
+        return nil
+    }
+
     addr := "xenblocks.io:6668"
     u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
 
@@ -497,16 +508,17 @@ func establishWebSocketConnection() error {
 
 // Function to send data over WebSocket with four parameters
 func sendDataOverWebSocket(peerID string, blockID string, hash string, timeDiff string) {
+    // Check if the connection is established, if not, try to establish it
     if c == nil {
         err := establishWebSocketConnection()
         if err != nil {
             // Handle connection error
-	    log.Info("Can't connect to websocket, error: ", err)
+            log.Info("WS error:", err)
             return
         }
     }
 
-    // Define the data to be sent
+    // Prepare the data to be sent
     responseData := map[string]interface{}{
         "peer_id":   peerID,
         "block_id":  blockID,
@@ -524,11 +536,9 @@ func sendDataOverWebSocket(peerID string, blockID string, hash string, timeDiff 
     // Send the JSON response through the WebSocket
     if err := c.WriteMessage(websocket.TextMessage, jsonData); err != nil {
         log.Info("write error:", err)
-        // Consider re-establishing the connection if needed
+        // Optionally handle reconnection here
     }
 }
-
-
 
 func (s *Service) ReexecuteBlocks(from, to idx.Block) {
 	blockProc := s.blockProcModules
