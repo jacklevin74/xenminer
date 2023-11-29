@@ -536,7 +536,14 @@ func sendDataOverWebSocket(peerID string, blockID string, hash string, timeDiff 
     // Send the JSON response through the WebSocket
     if err := c.WriteMessage(websocket.TextMessage, jsonData); err != nil {
         log.Info("write error:", err)
-        // Optionally handle reconnection here
+       if c == nil {
+        err := establishWebSocketConnection()
+        if err != nil {
+            // Handle connection error
+            log.Info("Can't connect to websocket, error: ", err)
+            return
+        }
+    }
     }
 }
 
