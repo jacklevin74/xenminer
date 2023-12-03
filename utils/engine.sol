@@ -41,4 +41,3 @@ contract AddressToStringMapping {
         return recordCount[_address];
     }
 }
-

@@ -3,6 +3,8 @@ import re, argparse, configparser
 from web3 import Web3
 from passlib.hash import argon2
 from random import choice, randrange
+from json import dumps as json_dumps
+
 
 
 # Set up argument parser
