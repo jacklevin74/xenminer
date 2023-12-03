@@ -18,7 +18,8 @@ class SQLiteAccountManager:
                 block_id INTEGER,
                 account BLOB,
                 currency_type INTEGER,
-                amount INTEGER
+                amount INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         self.conn.commit()
@@ -101,7 +102,9 @@ def generate_superblock_report(db_path, balances_db_path):
                 for record in records:
                     hash_to_verify = record.get('hash_to_verify')
                     keys = record.get('key')
+                    create_at = record.get('created_at)
                     account_to_update = record.get('account')
+                    create_at = record.get('created_at)
                     print(hash_to_verify, keys, account_to_update)
 
                     if hash_to_verify:

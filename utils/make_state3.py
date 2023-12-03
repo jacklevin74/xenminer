@@ -24,7 +24,8 @@ class SQLiteAccountManager:
                 salt_bytes BLOB,
                 key BLOB,
                 currency_type INTEGER,
-                amount INTEGER
+                amount INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         self.conn.commit()
@@ -38,15 +39,15 @@ class SQLiteAccountManager:
 
 
 
-    def credit_balance(self, block_id, account, hash_to_verify, key, currency_type, amount):
+    def credit_balance(self, block_id, account, hash_to_verify, key, currency_type, amount, created_at):
         try:
             account_bytes = bytes.fromhex(account[2:])
             key_bytes = bytes.fromhex(key)
             m_value, t_value, p_value, salt_bytes = process_argon2id_hash(hash_to_verify)
             self.cursor.execute('''
-                INSERT INTO account_balances (block_id, account, m_value, t_value, p_value, salt_bytes,  key, currency_type, amount)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (block_id, account_bytes, m_value, t_value, p_value, salt_bytes,  key_bytes, currency_type, amount))
+                INSERT INTO account_balances (block_id, account, m_value, t_value, p_value, salt_bytes,  key, currency_type, amount, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (block_id, account_bytes, m_value, t_value, p_value, salt_bytes,  key_bytes, currency_type, amount, created_at))
             self.conn.commit()
 
             # Check if the row was inserted, if not, it's a collision
@@ -98,7 +99,7 @@ def process_argon2id_hash(hash):
 
 
 
-def check_and_credit_for_capital_count(block_id, hash_to_verify, key, account_to_update, account_manager):
+def check_and_credit_for_capital_count(block_id, hash_to_verify, key, account_to_update, account_manager, created_at):
     try:
         account_bytes = bytes.fromhex(account_to_update[2:]) 
 
@@ -106,7 +107,7 @@ def check_and_credit_for_capital_count(block_id, hash_to_verify, key, account_to
 
         hash_uppercase_only = ''.join(filter(str.isupper, last_element))
         if len(hash_uppercase_only) >= 50:
-            account_manager.credit_balance(block_id, account_to_update, hash_to_verify, key, 3, 1)  # 3 for X.BLK
+            account_manager.credit_balance(block_id, account_to_update, hash_to_verify, key, 3, 1, created_at)  # 3 for X.BLK
             return
     except ValueError:
         #print(f"Invalid hexadecimal string: {account_to_update}")
@@ -139,6 +140,8 @@ def generate_superblock_report(db_path, balances_db_path):
                 for record in records:
                     hash_to_verify = record.get('hash_to_verify')
                     keys = record.get('key')
+                    record_id = record.get('block_id')
+                    created_at = record.get('date')
                     m_value, t_value, p_value, salt_bytes = process_argon2id_hash(hash_to_verify)
                     #print (m_value, t_value, p_value, base64.b64encode(salt_bytes))
                     account_to_update = record.get('account')
@@ -146,10 +149,10 @@ def generate_superblock_report(db_path, balances_db_path):
 
                     if hash_to_verify:
                         if 'XUNI' in hash_to_verify or bool(re.search('XUNI[0-9]', hash_to_verify)):
-                            account_manager.credit_balance(block_id, account_to_update, hash_to_verify,keys, 2, 1)  # 2 for XUNI
+                            account_manager.credit_balance(record_id, account_to_update, hash_to_verify,keys, 2, 1, created_at)  # 2 for XUNI
                         elif 'XEN' in hash_to_verify or 'XEN1' in hash_to_verify or 'XEN11' in hash_to_verify:
-                            account_manager.credit_balance(block_id, account_to_update, hash_to_verify,keys,1, 1)  # 1 for XNM
-                            check_and_credit_for_capital_count(block_id, hash_to_verify, keys, account_to_update, account_manager)
+                            account_manager.credit_balance(record_id, account_to_update, hash_to_verify,keys,1, 1, created_at)  # 1 for XNM
+                            check_and_credit_for_capital_count(record_id, hash_to_verify, keys, account_to_update, account_manager, created_at)
 
             except json.JSONDecodeError:
                 print(f"Error decoding JSON for block ID: {block_id}")
