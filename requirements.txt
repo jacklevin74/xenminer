@@ -3,3 +3,11 @@ requests
 tqdm
 argon2_cffi 
 web3==6.11.1
+sqlalchemy
+hexbytes
+eth-utils
+flask-sock
+python-decouple
+gunicorn
+flask_cors
+jsonrpcserver
