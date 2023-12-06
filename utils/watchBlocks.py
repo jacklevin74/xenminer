@@ -20,7 +20,7 @@ contract_address = "0xa21DF1C412ceAE97bf1af79d4eDeCA8c9686EC30"  # Replace with 
 contract = w3.eth.contract(address=contract_address, abi=contract_abi)
 
 # Event filter for the 'NewHash' event
-new_hash_filter = contract.events.NewHash.createFilter(fromBlock='latest')
+new_hash_filter = contract.events.NewHash.create_filter(fromBlock='latest')
 
 def generate_argon2_hash(key, m_value, t_value, p_value, salt_bytes):
     # Ensure key and salt_bytes are in bytes format
