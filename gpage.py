@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify, render_template
+from requests.exceptions import RequestException
 from passlib.hash import argon2
 import sqlite3, base64
 from datetime import datetime
+import requests
 import time
 import re
 from web3 import Web3
@@ -46,45 +48,32 @@ def log_verification_failure(message, account):
     with open(log_file_path, 'a') as log_file:
         log_file.write(f"{current_time} - Issued 401: {account}. Message: {message}\n")
 
+
+def read_difficulty_level(file_path):
+    try:
+        with open(file_path, "r") as file:
+            # Read the file and strip any leading/trailing whitespace
+            difficulty_level = file.read().strip()
+            return difficulty_level
+    except FileNotFoundError:
+        print("File not found.")
+        return 100000
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return 100000
+
+
 # Function to get difficulty level
 def get_difficulty(account=None):
-    global difficulty_cache, last_fetched_time  # Declare as global to modify them
     
-    # Generate a cache key based on the account
-    cache_key = account if account else "default"
+    file_path = "/home/ubuntu/mining/diff.chain"
+    try:
+        new_difficulty_level = int(read_difficulty_level(file_path))
+        #print ("Read from file: ", new_difficulty_level)
+    except (TypeError, ValueError):
+        new_difficulty_level = 100000
 
-    # Get the current time
-    current_time = time.time()
-    
-    # Check if the cache has not expired (assuming 60 seconds as the cache duration)
-    if cache_key in last_fetched_time and (current_time - last_fetched_time[cache_key] < 60):
-        return difficulty_cache[cache_key]
-    
-    # Otherwise, fetch from database
-    conn = sqlite3.connect('difficulty.db')  # Replace with your actual database name
-    cursor = conn.cursor()
-
-    if account:
-        cursor.execute('SELECT difficulty FROM difficulty_table WHERE account = ? LIMIT 1;', (account,))
-        difficulty_level = cursor.fetchone()
-        if difficulty_level is None:
-            cursor.execute('SELECT level FROM difficulty LIMIT 1;')
-            difficulty_level = cursor.fetchone()
-    else:
-        cursor.execute('SELECT level FROM difficulty LIMIT 1;')
-        difficulty_level = cursor.fetchone()
-
-    conn.close()
-
-    # Update the cache and the last fetched time
-    if difficulty_level:
-        difficulty_cache[cache_key] = str(difficulty_level[0])
-    else:
-        difficulty_cache[cache_key] = '8'  # or some default value
-
-    last_fetched_time[cache_key] = current_time
-
-    return difficulty_cache[cache_key]
+    return str(new_difficulty_level)
 
 # Function to get difficulty level
 def get_difficulty2(account=None):
@@ -528,6 +517,7 @@ def verify_hash():
                 #c.execute('''INSERT INTO xuni (hash_to_verify, key, account)
                  #     VALUES (?, ?, ?)''', (hash_to_verify, key, account))
                 
+                send_post_request(hash_to_verify, key, account, "1")
                 insert_query = '''INSERT INTO xuni (hash_to_verify, key, account) VALUES (?, ?, ?)'''
                 data_tuple = (hash_to_verify, key, account)
                 success = insert_with_retry(c, insert_query, data_tuple)
@@ -538,6 +528,10 @@ def verify_hash():
                 print("XEN11 hash added to batch")
                 #c.execute('''INSERT INTO blocks (hash_to_verify, key, account)
                  #   VALUES (?, ?, ?)''', (hash_to_verify, key, account))
+
+
+                #send to listener
+                send_post_request(hash_to_verify, key, account, "0")
 
                 insert_query = '''INSERT INTO blocks (hash_to_verify, key, account) VALUES (?, ?, ?)'''
                 data_tuple = (hash_to_verify, key, account)
@@ -553,7 +547,7 @@ def verify_hash():
             print("This Generates 200 for difficulty being good", submitted_difficulty, int(difficulty))
             print("Inserting hash into db: ", hash_to_verify)
             
-
+            
             conn.commit()
 
         except sqlite3.IntegrityError as e:
@@ -571,7 +565,27 @@ def verify_hash():
         return jsonify({"message": "Hash verification failed."}), 401
 
 
-def insert_with_retry(cursor, query, data, max_retries=3, sleep_interval=1):
+def send_post_request(hash_to_verify, key, account, kind):
+    url = "http://localhost:9997/process_hash"  # Replace with your specific endpoint
+    data = {
+        "hash_to_verify": hash_to_verify,
+        "key": key,
+        "type": kind,
+        "account": account
+    }
+    print ("ADDING REQUEST TO SEQUENCER")
+
+    try:
+        response = requests.post(url, json=data)
+        if response.status_code == 200:
+            print("Data sent successfully. Response:", response.json())
+        else:
+            print("Failed to send data. Status code:", response.status_code)
+    except RequestException as e:
+        print("An error occurred:", e)
+
+
+def insert_with_retry(cursor, query, data, max_retries=10, sleep_interval=3):
     attempt = 0
     while attempt < max_retries:
         try:
