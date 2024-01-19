@@ -163,6 +163,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS blockchain (
                     merkle_root TEXT,
                     records_json TEXT,
                     block_hash TEXT)''')
+c.execute("CREATE UNIQUE INDEX IF NOT EXISTS block_hash_idx ON blockchain (block_hash)")
 # Fetch the latest block ID from the blockchain
 c.execute('SELECT MAX(id) FROM blockchain')
 row = c.fetchone()
