@@ -1,18 +1,18 @@
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 from requests.exceptions import RequestException
 from passlib.hash import argon2
 import sqlite3, base64
-from datetime import datetime
 import requests
 import time
 import re
 from web3 import Web3
-
-app = Flask(__name__)
+from datetime import datetime
 
 # Global variables to hold cached difficulty level and the time it was fetched
 cached_difficulty = None
 last_fetched_time = 0
+
 
 def create_database():
     conn = sqlite3.connect('blocks.db')
@@ -23,16 +23,14 @@ def create_database():
     conn.commit()
     conn.close()
 
-from flask import Flask, render_template
-import sqlite3
 
 app = Flask(__name__)
+CORS(app, resources={r"/leaderboard*": {"origins": "*"}})
 
 # Initialize cache dictionary and last fetched time
 difficulty_cache = {}
 last_fetched_time = {}
 
-from datetime import datetime
 def is_within_five_minutes_of_hour():
     timestamp = datetime.now()
     minutes = timestamp.minute
@@ -65,7 +63,7 @@ def read_difficulty_level(file_path):
 
 # Function to get difficulty level
 def get_difficulty(account=None):
-    
+
     file_path = "/home/ubuntu/mining/diff.chain"
     try:
         new_difficulty_level = int(read_difficulty_level(file_path))
@@ -78,7 +76,7 @@ def get_difficulty(account=None):
 # Function to get difficulty level
 def get_difficulty2(account=None):
     global cached_difficulty, last_fetched_time  # Declare as global to modify them
-    
+
     # Check if it has been more than 60 seconds since the last fetch
     current_time = time.time()
     if current_time - last_fetched_time < 10:
@@ -155,7 +153,7 @@ def blockrate_per_day():
             ORDER BY num_blocks DESC 
             LIMIT 1000
             ''')
-            
+
             rows = c.fetchall()
 
             # Convert rows into a list of dictionaries for JSON representation
@@ -169,27 +167,22 @@ def blockrate_per_day():
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
     global difficulty
+
+    limit = int(request.args.get('limit', 500))
+    offset = int(request.args.get('offset', 0))
+
     difficulty=get_difficulty()
     # Connect to the cache database
     cache_conn = sqlite3.connect('cache.db', timeout=10)
     cache_c = cache_conn.cursor()
 
     # Read from the cache table for leaderboard data
-    cache_c.execute("SELECT * FROM cache_table ORDER BY total_blocks DESC")
+    cache_c.execute("SELECT * FROM cache_table ORDER BY total_blocks DESC LIMIT ? OFFSET ?", (limit, offset))
     results = cache_c.fetchall()
     cache_conn.close()
 
-    # Calculate global statistics from the original blocks database
-    conn = sqlite3.connect('blocks.db', timeout=10)
-    c = conn.cursor()
-    c.execute('''SELECT SUM(attempts) as total_attempts,
-                 strftime('%s', MAX(timestamp)) - strftime('%s', MIN(timestamp)) as total_time
-                 FROM (SELECT * FROM account_attempts ORDER BY timestamp DESC LIMIT 100000)''')
-    result = c.fetchone()
-    total_attempts, total_time = result
-    #total_attempts_per_second = total_attempts / (total_time if total_time != 0 else 1)
+    # No longer used but we need to return something
     total_attempts_per_second = 1
-    conn.close()
 
     # Get the latest rate from the difficulty database
     diff_conn = sqlite3.connect('difficulty.db', timeout=10)
@@ -201,6 +194,13 @@ def leaderboard():
     latest_miners = diff_c.fetchone()
     diff_conn.close()
 
+    conn = sqlite3.connect('blocks.db')
+    c = conn.cursor()
+    c.execute('SELECT block_id FROM blocks ORDER BY block_id DESC LIMIT 1')
+    result = c.fetchone()
+    tb = result[0] if result else None
+    conn.close()
+
     if latest_miners:
         latest_miners = latest_miners[0]
     else:
@@ -211,7 +211,23 @@ def leaderboard():
     else:
         latest_rate = 0  # Default value if no rate is found
 
-    leaderboard = [(rank + 1, account, total_blocks, round(hashes_per_second, 2), super_blocks)
+    if request.headers.get('Accept') == 'application/json':
+        return jsonify({
+            "totalHashRate": latest_rate,
+            "totalMiners": latest_miners,
+            "totalBlocks": tb,
+            "difficulty": difficulty,
+            "miners": [{
+                'rank': i + 1 + offset,
+                'account': r[0].strip(),
+                'blocks': r[1],
+                'hashRate': round(r[2], 2),
+                'superBlocks': r[3]
+
+            } for i, r in enumerate(results)]
+        })
+
+    leaderboard = [(rank + 1 + offset, account, total_blocks, round(hashes_per_second, 2), super_blocks)
                    for rank, (account, total_blocks, hashes_per_second, super_blocks) in enumerate(results)]
 
     return render_template('leaderboard4.html', leaderboard=leaderboard,
@@ -270,7 +286,7 @@ def total_blocks():
 
     conn.close()
 
-    return jsonify({'total_blocks_top100': last_block_id}) 
+    return jsonify({'total_blocks_top100': last_block_id})
 
 
 
@@ -458,7 +474,7 @@ def verify_hash():
 
     #if f'm={difficulty}' not in hash_to_verify:
     #    print ("Compare diff ", submitted_difficulty, int(difficulty))
-    if submitted_difficulty < int(difficulty): 
+    if submitted_difficulty < int(difficulty):
     #if abs(submitted_difficulty - int(difficulty)) > 50:
 
         print ("This Generates 401 for difficulty being too low", submitted_difficulty, int(difficulty))
@@ -466,7 +482,7 @@ def verify_hash():
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401
 
-    
+
     stored_targets = ['XEN11']  # Adjusted list to exclude 'XUNI' since we will search for it differently
     found = False
 
@@ -500,7 +516,7 @@ def verify_hash():
         is_verified = False
 
     #if argon2.verify(key, hash_to_verify):
-    if is_verified: 
+    if is_verified:
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         is_xen11_present = 'XEN11' in hash_to_verify[-87:]
         is_xuni_present = re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None
@@ -516,7 +532,7 @@ def verify_hash():
                 print("XUNI submitted and added to batch")
                 #c.execute('''INSERT INTO xuni (hash_to_verify, key, account)
                  #     VALUES (?, ?, ?)''', (hash_to_verify, key, account))
-                
+
                 send_post_request(hash_to_verify, key, account, "1")
                 insert_query = '''INSERT INTO xuni (hash_to_verify, key, account) VALUES (?, ?, ?)'''
                 data_tuple = (hash_to_verify, key, account)
@@ -546,8 +562,8 @@ def verify_hash():
              #   VALUES (?, ?, ?)''', (account, timestamp, attempts))
             print("This Generates 200 for difficulty being good", submitted_difficulty, int(difficulty))
             print("Inserting hash into db: ", hash_to_verify)
-            
-            
+
+
             conn.commit()
 
         except sqlite3.IntegrityError as e:
@@ -555,7 +571,7 @@ def verify_hash():
             print(f"Error: {error_message} ", hash_to_verify, key, account)
             return jsonify({"message": f"Block already exists, continue"}), 400
 
-        finally: 
+        finally:
             conn.close()
 
         return jsonify({"message": "Hash verified successfully and block saved."}), 200
@@ -687,4 +703,7 @@ def total_blocks2():
     conn.close()
 
     return jsonify({"total_blocks": result[0]}), 200
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5555, debug=True)
 
