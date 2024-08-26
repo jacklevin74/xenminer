@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 import sqlite3
 from gpage import get_difficulty
@@ -32,6 +32,9 @@ def fetch_total_blocks():
 
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
+    if request.headers.get('Accept') != 'application/json':
+        return redirect("https://explorer.xenblocks.io")
+
     limit = int(request.args.get('limit', 500))
     offset = int(request.args.get('offset', 0))
 
