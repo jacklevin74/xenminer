@@ -63,8 +63,8 @@ def read_difficulty_level(file_path):
 
 # Function to get difficulty level
 def get_difficulty(account=None):
-
-    file_path = "/home/ubuntu/mining/diff.chain"
+    
+    file_path = "/home/ubuntu/mining/diff2.chain"
     try:
         new_difficulty_level = int(read_difficulty_level(file_path))
         #print ("Read from file: ", new_difficulty_level)
@@ -495,6 +495,9 @@ def verify_hash():
     if re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None:
         found = True
         print("Found Target: XUNI[0-9]")
+        if not is_within_five_minutes_of_hour():
+            error_message = f"XUNI Submitted outside of proper time frame."
+            return jsonify({"message": error_message}), 401
 
     if not found:
         print (hash_to_verify)
@@ -532,8 +535,8 @@ def verify_hash():
                 print("XUNI submitted and added to batch")
                 #c.execute('''INSERT INTO xuni (hash_to_verify, key, account)
                  #     VALUES (?, ?, ?)''', (hash_to_verify, key, account))
-
-                send_post_request(hash_to_verify, key, account, "1")
+                
+                #send_post_request(hash_to_verify, key, account, "1")
                 insert_query = '''INSERT INTO xuni (hash_to_verify, key, account) VALUES (?, ?, ?)'''
                 data_tuple = (hash_to_verify, key, account)
                 success = insert_with_retry(c, insert_query, data_tuple)
@@ -547,7 +550,7 @@ def verify_hash():
 
 
                 #send to listener
-                send_post_request(hash_to_verify, key, account, "0")
+                #send_post_request(hash_to_verify, key, account, "0")
 
                 insert_query = '''INSERT INTO blocks (hash_to_verify, key, account) VALUES (?, ?, ?)'''
                 data_tuple = (hash_to_verify, key, account)
@@ -589,12 +592,13 @@ def send_post_request(hash_to_verify, key, account, kind):
         "type": kind,
         "account": account
     }
-    print ("ADDING REQUEST TO SEQUENCER")
+    print ("ADDING REQUEST TO SEQUENCER ")
+    print(data)
 
     try:
         response = requests.post(url, json=data)
         if response.status_code == 200:
-            print("Data sent successfully. Response:", response.json())
+            print("Data sent successfully. Response:", response.status_code)
         else:
             print("Failed to send data. Status code:", response.status_code)
     except RequestException as e:
