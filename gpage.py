@@ -1,18 +1,18 @@
-from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
+from flask import Flask, request, jsonify, render_template, redirect
 from requests.exceptions import RequestException
 from passlib.hash import argon2
 import sqlite3, base64
+from datetime import datetime
 import requests
 import time
 import re
 from web3 import Web3
-from datetime import datetime
+
+app = Flask(__name__)
 
 # Global variables to hold cached difficulty level and the time it was fetched
 cached_difficulty = None
 last_fetched_time = 0
-
 
 def create_database():
     conn = sqlite3.connect('blocks.db')
@@ -23,14 +23,16 @@ def create_database():
     conn.commit()
     conn.close()
 
+from flask import Flask, render_template
+import sqlite3
 
 app = Flask(__name__)
-CORS(app, resources={r"/leaderboard*": {"origins": "*"}})
 
 # Initialize cache dictionary and last fetched time
 difficulty_cache = {}
 last_fetched_time = {}
 
+from datetime import datetime
 def is_within_five_minutes_of_hour():
     timestamp = datetime.now()
     minutes = timestamp.minute
@@ -63,7 +65,7 @@ def read_difficulty_level(file_path):
 
 # Function to get difficulty level
 def get_difficulty(account=None):
-    
+
     file_path = "/home/ubuntu/mining/diff2.chain"
     try:
         new_difficulty_level = int(read_difficulty_level(file_path))
@@ -166,74 +168,7 @@ def blockrate_per_day():
 
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
-    global difficulty
-
-    limit = int(request.args.get('limit', 500))
-    offset = int(request.args.get('offset', 0))
-
-    difficulty=get_difficulty()
-    # Connect to the cache database
-    cache_conn = sqlite3.connect('cache.db', timeout=10)
-    cache_c = cache_conn.cursor()
-
-    # Read from the cache table for leaderboard data
-    cache_c.execute("SELECT * FROM cache_table ORDER BY total_blocks DESC LIMIT ? OFFSET ?", (limit, offset))
-    results = cache_c.fetchall()
-    cache_conn.close()
-
-    # No longer used but we need to return something
-    total_attempts_per_second = 1
-
-    # Get the latest rate from the difficulty database
-    diff_conn = sqlite3.connect('difficulty.db', timeout=10)
-    diff_c = diff_conn.cursor()
-    diff_c.execute("SELECT rate FROM blockrate ORDER BY id DESC LIMIT 1")
-    latest_rate = diff_c.fetchone()
-
-    diff_c.execute("SELECT total_miners FROM miners ORDER BY id DESC LIMIT 1")
-    latest_miners = diff_c.fetchone()
-    diff_conn.close()
-
-    conn = sqlite3.connect('blocks.db')
-    c = conn.cursor()
-    c.execute('SELECT block_id FROM blocks ORDER BY block_id DESC LIMIT 1')
-    result = c.fetchone()
-    tb = result[0] if result else None
-    conn.close()
-
-    if latest_miners:
-        latest_miners = latest_miners[0]
-    else:
-        latest_miners = 0  # Default value if no data is found
-
-    if latest_rate:
-        latest_rate = latest_rate[0]
-    else:
-        latest_rate = 0  # Default value if no rate is found
-
-    if request.headers.get('Accept') == 'application/json':
-        return jsonify({
-            "totalHashRate": latest_rate,
-            "totalMiners": latest_miners,
-            "totalBlocks": tb,
-            "difficulty": difficulty,
-            "miners": [{
-                'rank': i + 1 + offset,
-                'account': r[0].strip(),
-                'blocks': r[1],
-                'hashRate': round(r[2], 2),
-                'superBlocks': r[3]
-
-            } for i, r in enumerate(results)]
-        })
-
-    leaderboard = [(rank + 1 + offset, account, total_blocks, round(hashes_per_second, 2), super_blocks)
-                   for rank, (account, total_blocks, hashes_per_second, super_blocks) in enumerate(results)]
-
-    return render_template('leaderboard4.html', leaderboard=leaderboard,
-                           total_attempts_per_second=int(round(total_attempts_per_second, 2) / 1000),
-                           latest_rate=latest_rate, latest_miners=latest_miners, difficulty=difficulty)
-
+    return redirect("https://explorer.xenblocks.io")
 
 @app.route('/get_balance/<account>', methods=['GET'])
 def get_balance(account):
@@ -535,7 +470,7 @@ def verify_hash():
                 print("XUNI submitted and added to batch")
                 #c.execute('''INSERT INTO xuni (hash_to_verify, key, account)
                  #     VALUES (?, ?, ?)''', (hash_to_verify, key, account))
-                
+
                 #send_post_request(hash_to_verify, key, account, "1")
                 insert_query = '''INSERT INTO xuni (hash_to_verify, key, account) VALUES (?, ?, ?)'''
                 data_tuple = (hash_to_verify, key, account)
@@ -707,7 +642,3 @@ def total_blocks2():
     conn.close()
 
     return jsonify({"total_blocks": result[0]}), 200
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5555, debug=True)
-
