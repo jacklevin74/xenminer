@@ -1,0 +1,14 @@
+[Unit]
+Description=Xenblocks Make Superblocks
+After=network.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/mining
+ExecStart=/usr/bin/python3 make_superblocks.py
+Restart=always
+SyslogIdentifier=xenblocks-make-superblocks
+
+[Install]
+WantedBy=multi-user.target

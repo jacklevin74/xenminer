@@ -1,0 +1,14 @@
+[Unit]
+Description=Xenblocks JSON API
+After=network.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/mining
+ExecStart=/usr/bin/gunicorn -c json_api/gunicore_config.py -b 127.0.0.1:5567 'json_api.app:create_app()'
+Restart=always
+SyslogIdentifier=xenblocks-json-api
+
+[Install]
+WantedBy=multi-user.target

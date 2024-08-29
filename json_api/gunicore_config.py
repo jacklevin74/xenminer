@@ -1,0 +1,9 @@
+workers = 30
+worker_class = "gevent"
+threads = 2
+max_requests = 5000
+max_requests_jitter = 1000
+keepalive = 5
+timeout = 30
+limit_request_line = 4094
+limit_request_fields = 100

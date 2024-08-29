@@ -1,0 +1,14 @@
+[Unit]
+Description=Xenblocks Make Cache
+After=network.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/mining
+ExecStart=/usr/bin/python3 make_cache.py
+Restart=always
+SyslogIdentifier=xenblocks-make-cache
+
+[Install]
+WantedBy=multi-user.target

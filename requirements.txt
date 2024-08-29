@@ -5,3 +5,8 @@ argon2_cffi
 web3
 flask-cors
 flask
+flask_caching
+Flask-SQLAlchemy
+python-dotenv
+gevent
+gunicorn
