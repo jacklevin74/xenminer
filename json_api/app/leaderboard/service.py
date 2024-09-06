@@ -3,6 +3,7 @@ from ..models.blocks import Blocks
 from ..models.cache import Cache
 from ..models.miners import Miners
 from gpage import get_difficulty
+from eth_utils import to_checksum_address
 
 
 def fetch_cache_data(limit, offset):
@@ -40,7 +41,7 @@ def get_leaderboard(limit: int, offset: int):
     miners = [
         {
             "rank": r.rank,
-            "account": r.account.strip(),
+            "account": to_checksum_address(r.account.strip()),
             "blocks": r.total_blocks,
             "hashRate": round(r.hashes_per_second, 2),
             "superBlocks": r.super_blocks,
@@ -63,7 +64,7 @@ def get_leaderboard_entry(account: str):
         raise ValueError("Account not found")
 
     return {
-        "account": result.account.strip(),
+        "account": to_checksum_address(result.account.strip()),
         "blocks": result.total_blocks,
         "hashRate": round(result.hashes_per_second, 2),
         "superBlocks": result.super_blocks,
