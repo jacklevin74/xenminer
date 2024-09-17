@@ -35,20 +35,24 @@ def recreate_cache_table():
 
         # Fetch data from the original database and populate the cache table
         original_cursor.execute("""
-        WITH RankedBlocks AS (
+            WITH RankedBlocks AS (
+                SELECT 
+                    b.account,
+                    COUNT(b.block_id) AS total_blocks,
+                    COALESCE(sb.super_block_count, 0) AS super_blocks
+                FROM blocks b
+                LEFT JOIN super_blocks sb ON b.account = sb.account
+                GROUP BY 1
+            )
             SELECT 
-                b.account,
-                COUNT(b.block_id) AS total_blocks,
-                100000 AS hashes_per_second,  -- static value of 100000 for hashes_per_second
-                COALESCE(sb.super_block_count, 0) AS super_blocks
-            FROM blocks b
-            LEFT JOIN super_blocks sb USING (account)
-            GROUP BY b.account
-        )
-        SELECT *,
-               ROW_NUMBER() OVER (ORDER BY total_blocks DESC) AS rank
-        FROM RankedBlocks
-        ORDER BY rank;
+                LOWER(account) AS account,
+                SUM(total_blocks) AS total_blocks,
+                100000 AS hashes_per_second,
+                SUM(super_blocks) AS super_blocks,
+                ROW_NUMBER() OVER (ORDER BY total_blocks DESC, super_blocks DESC, account DESC) AS rank  -- Use super_blocks as secondary sort
+            FROM RankedBlocks
+            GROUP BY 1
+            ORDER BY rank
         """)
 
         rows = original_cursor.fetchall()
