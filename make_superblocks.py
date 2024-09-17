@@ -30,7 +30,7 @@ def update_super_blocks():
             )
 
             # Fetch all hash_to_verify and account records from blocks table
-            cursor.execute("SELECT hash_to_verify, account FROM blocks")
+            cursor.execute("SELECT hash_to_verify, LOWER(account) AS account FROM blocks")
             rows = cursor.fetchall()
 
             # Prepare a dictionary to keep counts
