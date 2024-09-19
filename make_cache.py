@@ -20,13 +20,18 @@ def recreate_cache_table():
             account TEXT PRIMARY KEY,
             total_blocks INTEGER,
             hashes_per_second REAL,
-            super_blocks INTEGER
+            super_blocks INTEGER,
+            rank INTEGER DEFAULT 0,
+            xnm BIGINT DEFAULT 0
         )""")
         cache_conn.commit()
 
         try:
             cache_cursor.execute("""
             ALTER TABLE cache_table ADD COLUMN rank INTEGER DEFAULT 0
+            """)
+            cache_cursor.execute("""
+            ALTER TABLE cache_table ADD COLUMN xnm BIGINT DEFAULT 0
             """)
             cache_conn.commit()
         except sqlite3.OperationalError:
@@ -35,32 +40,42 @@ def recreate_cache_table():
 
         # Fetch data from the original database and populate the cache table
         original_cursor.execute("""
-            WITH RankedBlocks AS (
-                SELECT 
-                    b.account,
-                    COUNT(b.block_id) AS total_blocks,
-                    COALESCE(sb.super_block_count, 0) AS super_blocks
-                FROM blocks b
-                LEFT JOIN super_blocks sb ON b.account = sb.account
-                GROUP BY 1
-            )
-            SELECT 
-                LOWER(account) AS account,
-                SUM(total_blocks) AS total_blocks,
-                100000 AS hashes_per_second,
-                SUM(super_blocks) AS super_blocks,
-                ROW_NUMBER() OVER (ORDER BY total_blocks DESC, super_blocks DESC, account DESC) AS rank  -- Use super_blocks as secondary sort
-            FROM RankedBlocks
-            GROUP BY 1
-            ORDER BY rank
+        WITH grouped_blocks AS (
+            SELECT
+                LOWER(b.account) AS account,
+                1 + CAST(
+                        (strftime('%Y', b.created_at) - 2023) +
+                        CASE
+                            WHEN strftime('%m-%d %H:%M:%S', b.created_at) >= '09-16 21:00:00'
+                                THEN 0 ELSE -1
+                            END AS INTEGER
+                    ) AS epoch,
+                COUNT(b.block_id) AS blocks_per_epoch,
+                COALESCE(sb.super_block_count, 0) AS super_blocks
+            FROM blocks b
+                     LEFT JOIN super_blocks sb ON b.account = sb.account
+            GROUP BY LOWER(b.account), epoch
+        )
+        
+        SELECT
+            account,
+            ROW_NUMBER() OVER (ORDER BY SUM(blocks_per_epoch) DESC, SUM(super_blocks) DESC, account DESC) AS rank,
+            SUM(blocks_per_epoch) AS total_blocks,
+            SUM(super_blocks) AS total_super_blocks,
+            SUM(blocks_per_epoch * POWER(10, 18) / POWER(2, epoch - 1)) AS xnm,
+            100000 AS hashes_per_second
+        FROM grouped_blocks
+        GROUP BY account
+        ORDER BY rank
         """)
 
         rows = original_cursor.fetchall()
         num_rows_fetched = len(rows)  # Get the number of rows fetched
+        logging.info(f"Fetched {num_rows_fetched} rows from the original database.")
 
         # Insert fetched rows into the cache table
         cache_cursor.executemany("""
-        INSERT OR REPLACE INTO cache_table (account, total_blocks, hashes_per_second, super_blocks, rank) VALUES (?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO cache_table (account, rank, total_blocks, super_blocks, xnm, hashes_per_second) VALUES (?, ?, ?, ?, ?, ?)
         """, rows)
         cache_conn.commit()
 

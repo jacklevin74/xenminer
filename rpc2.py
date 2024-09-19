@@ -247,6 +247,7 @@ def handle_eth_call(data):
             balance = get_xuni_account_count('0x' + address_queried) * 1000000000000000000
         elif target_address == "0x999999cf1046e68e36e1aa2e0e07105eddd00001":
             balance = get_xblk_account_count('0x' + address_queried) * 1000000000000000000
+            print ("SUPERBLOCK BALANCE for: ", address_queried, balance)
         else:
             # Handle unknown contract address or give a default balance
             balance = 0
@@ -328,13 +329,29 @@ def index():
     if not data:
         abort(400, description="No data provided")
 
-    if data['jsonrpc'] != '2.0':
-        response = {'jsonrpc': '2.0', 'error': {'code': -32600, 'message': 'Invalid Request'}, 'id': None}
+
+    # Check if data is a dictionary
+    if isinstance(data, dict):
+        if data.get('jsonrpc') != '2.0':
+            response = {'jsonrpc': '2.0', 'error': {'code': -32600, 'message': 'Invalid Request'}, 'id': None}
+            print("Sending response:", response)  # Print response to the screen
+            return jsonify(response), 400
+    else:
+        # data is not a dictionary, handle error
+        response = {'jsonrpc': '2.0', 'error': {'code': -32700, 'message': 'Parse error'}, 'id': None}
         print("Sending response:", response)  # Print response to the screen
         return jsonify(response), 400
 
+
     # Initialize the result variable
     result = None
+
+    if data.get("method") == "web3_clientVersion":
+        return jsonify({
+            "id": data.get("id"),
+            "jsonrpc": "2.0",
+            "result": "XenBlocks/1.0"  # Replace this with your actual client version
+        })
 
     if data['method'] == 'eth_blockNumber':
         current_block_number += 1  # Increment block number
