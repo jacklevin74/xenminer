@@ -45,6 +45,9 @@ def get_leaderboard(limit: int, offset: int):
             "blocks": r.total_blocks,
             "hashRate": round(r.hashes_per_second, 2),
             "superBlocks": r.super_blocks,
+            "xnm": r.xnm,
+            "xblk": r.xblk,
+            "xuni": r.xuni,
         }
         for i, r in enumerate(cache_data)
     ]
@@ -69,4 +72,7 @@ def get_leaderboard_entry(account: str):
         "hashRate": round(result.hashes_per_second, 2),
         "superBlocks": result.super_blocks,
         "rank": result.rank,
+        "xnm": result.xnm,
+        "xblk": result.xblk,
+        "xuni": result.xuni,
     }

@@ -9,3 +9,6 @@ class Cache(db.Model):
     hashes_per_second = db.Column(db.Float)
     super_blocks = db.Column(db.Integer)
     rank = db.Column(db.Integer, default=0)
+    xnm = db.Column(db.BigInteger, default=0)
+    xblk = db.Column(db.BigInteger, default=0)
+    xuni = db.Column(db.BigInteger, default=0)
