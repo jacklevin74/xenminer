@@ -153,27 +153,13 @@ def get_xblk_account_count(account):
 
 def get_balance_from_db(account):
     try:
-        conn = sqlite3.connect("blocks.db")
-        cursor = conn.cursor()
-
-        conn_cache = sqlite3.connect("cache.db")
-        cursor_cache = conn_cache.cursor()
-
-        query = "SELECT super_block_count FROM super_blocks WHERE LOWER(account) = LOWER(?)"
-        #print(f"Executing SQL query: {query} with account: {account}")  # Print the query and account to standard output
-        #cursor.execute("SELECT super_block_count FROM super_blocks WHERE LOWER(account) = LOWER(?)", (account,))
-        print ("Account: ", account)
-        cursor_cache.execute("SELECT total_blocks FROM cache_table WHERE LOWER(account) = ?", (account.lower(),))
-        row = cursor_cache.fetchone()
-        print ("Balance for ", account, row[0] * 10 if row else 0)  # Modified this line to handle None
-        return row[0] * 10 if row else 0
+        with sqlite3.connect("cache.db") as conn_cache:
+            cursor_cache = conn_cache.cursor()
+            cursor_cache.execute("SELECT xnm FROM cache_table WHERE LOWER(account) = LOWER(?)", (account,))
+            return cursor_cache.fetchone()[0]
     except Exception as e:
         print("Database error:", e)
         return 0
-    finally:
-        if conn:
-            conn.close()
-            conn_cache.close()
 
 def rlp_encode(input_string):
     if len(input_string) == 1 and ord(input_string) < 0x80:
@@ -369,7 +355,7 @@ def index():
     elif data['method'] == 'eth_getBalance':
         account = data['params'][0]  # Convert account to lower case to ensure it matches
         balance_decimal = get_balance_from_db(account)  # Fetch balance from the database
-        result = hex(int(balance_decimal * 10**18))  # Convert to Wei
+        result = hex(int(balance_decimal))  # Convert to Wei
 
     elif data['method'] == 'eth_estimateGas':
         # Simulate gas estimation here. This is a simplified example and

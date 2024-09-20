@@ -11,3 +11,4 @@ python-dotenv
 gevent
 gunicorn
 eth_utils
+ethereum
