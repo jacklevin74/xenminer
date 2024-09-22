@@ -93,7 +93,7 @@ def recreate_cache_table():
         account_performance as (SELECT
             b.account,
             SUM(blocks_per_epoch) AS total_blocks,
-            SUM(blocks_per_epoch * POWER(10, 18) / POWER(2, epoch - 1)) AS xnm,
+            SUM(blocks_per_epoch * POWER(10, 19) / POWER(2, epoch - 1)) AS xnm,
             COALESCE(sb.super_block_count, 0) AS super_blocks,
             COALESCE(x.total_xuni, 0) AS total_xuni
         FROM grouped_blocks_by_epoch b
