@@ -58,27 +58,23 @@ def recreate_cache_table():
 
         # Fetch data from the original database and populate the cache table
         original_cursor.execute("""
-        WITH epoch_calculations AS (
+        WITH lower_case_accounts AS (
             SELECT
                 LOWER(b.account) AS account,
-                b.block_id,
-                strftime('%Y', b.created_at) AS created_year,
-                strftime('%m-%d %H:%M:%S', b.created_at) AS created_time
+                block_id
             FROM blocks b
+            GROUP BY 1, 2
         ),
         
         grouped_blocks_by_epoch AS (
             SELECT
-                LOWER(b.account) AS account,
-                1 + CAST(
-                        (created_year - 2023) +
-                        CASE
-                            WHEN created_time >= '09-16 21:00:00' THEN 0
-                            ELSE -1
-                            END AS INTEGER
-                    ) AS epoch,
+                account,
+                CASE
+                    WHEN block_id > 29818420 THEN 2
+                    ELSE 1
+                END AS epoch,
                 COUNT(b.block_id) AS blocks_per_epoch
-            FROM epoch_calculations b
+            FROM lower_case_accounts b
             GROUP BY 1, 2
         ),
         
