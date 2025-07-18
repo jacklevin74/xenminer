@@ -15,8 +15,9 @@ def redirect_to_explorer():
 def index():
     limit = int(request.args.get("limit", 500))
     offset = int(request.args.get("offset", 0))
+    require_sol_address = bool(request.args.get("require_sol_address", False))
 
-    return jsonify(get_leaderboard(limit, offset))
+    return jsonify(get_leaderboard(limit, offset, require_sol_address))
 
 
 @bp.route("/v1/leaderboard/<account>", methods=["GET"])

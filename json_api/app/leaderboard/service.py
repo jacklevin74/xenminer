@@ -6,13 +6,11 @@ from gpage import get_difficulty
 from eth_utils import to_checksum_address
 
 
-def fetch_cache_data(limit, offset):
-    return (
-        Cache.query.order_by(Cache.total_blocks.desc())
-        .limit(limit)
-        .offset(offset)
-        .all()
-    )
+def fetch_cache_data(limit, offset, require_sol_address):
+    query = Cache.query.order_by(Cache.total_blocks.desc())
+    if require_sol_address:
+        query = query.filter(Cache.sol_address.isnot(None))
+    return query.limit(limit).offset(offset).all()
 
 
 def fetch_latest_rate():
@@ -27,9 +25,9 @@ def fetch_total_blocks():
     return Blocks.query.order_by(Blocks.block_id.desc()).first()
 
 
-def get_leaderboard(limit: int, offset: int):
+def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
     difficulty = get_difficulty()
-    cache_data = fetch_cache_data(limit, offset)
+    cache_data = fetch_cache_data(limit, offset, require_sol_address)
     latest_rate = fetch_latest_rate()
     latest_miners = fetch_latest_miners()
     total_blocks = fetch_total_blocks()
@@ -48,6 +46,7 @@ def get_leaderboard(limit: int, offset: int):
             "xnm": r.xnm,
             "xblk": r.xblk,
             "xuni": r.xuni,
+            "solAddress": r.sol_address.strip() if r.sol_address else None,
         }
         for i, r in enumerate(cache_data)
     ]
@@ -75,4 +74,5 @@ def get_leaderboard_entry(account: str):
         "xnm": result.xnm,
         "xblk": result.xblk,
         "xuni": result.xuni,
+        "solAddress": result.sol_address.strip() if result.sol_address else None,
     }

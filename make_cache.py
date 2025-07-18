@@ -129,7 +129,7 @@ def recreate_cache_table():
             100000 AS hashes_per_second,
             sn.solanaPubkey
         FROM account_performance ap
-            LEFT OUTER JOIN signers.signers_normalized sn ON sn.ethAddress = ap.account
+            LEFT OUTER JOIN signers.signers_normalized sn ON LOWER(sn.ethAddress) = ap.account
         ORDER BY rank
         """)
 
