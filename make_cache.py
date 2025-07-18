@@ -10,7 +10,17 @@ def recreate_cache_table():
 
     try:
         original_conn = sqlite3.connect("blocks.db")
+    except sqlite3.OperationalError:
+        logging.error("Failed to connect to blocks.db. Please ensure the database is available.")
+        return
+
+    try:
         cache_conn = sqlite3.connect("cache.db")
+    except sqlite3.OperationalError:
+        logging.error("Failed to connect to cache.db. Please ensure the database is available.")
+        return
+
+    try:
         original_cursor = original_conn.cursor()
         cache_cursor = cache_conn.cursor()
 
@@ -24,7 +34,8 @@ def recreate_cache_table():
             rank INTEGER DEFAULT 0,
             xnm BIGINT DEFAULT 0,
             xblk BIGINT DEFAULT 0,
-            xuni BIGINT DEFAULT 0
+            xuni BIGINT DEFAULT 0,
+            sol_address TEXT
         )""")
         cache_conn.commit()
 
@@ -55,6 +66,16 @@ def recreate_cache_table():
             """)
         except sqlite3.OperationalError:
             pass
+
+        try:
+            cache_cursor.execute("""
+            ALTER TABLE cache_table ADD COLUMN sol_address TEXT
+            """)
+        except sqlite3.OperationalError:
+            pass
+
+        # Attach the signer_data database to use in joins
+        original_cursor.execute("ATTACH DATABASE 'signer_data.db' AS signers")
 
         # Fetch data from the original database and populate the cache table
         original_cursor.execute("""
@@ -98,15 +119,17 @@ def recreate_cache_table():
         GROUP BY b.account)
         
         SELECT
-            account,
-            ROW_NUMBER() OVER (ORDER BY total_blocks DESC, super_blocks DESC, total_xuni DESC, account DESC) AS rank,
+            ap.account,
+            ROW_NUMBER() OVER (ORDER BY total_blocks DESC, super_blocks DESC, total_xuni DESC, ap.account DESC) AS rank,
             total_blocks,
             super_blocks,
             xnm,
             super_blocks * power(10, 18) AS xblk,
             total_xuni * power(10, 18) AS xuni,
-            100000 AS hashes_per_second
-        FROM account_performance
+            100000 AS hashes_per_second,
+            sn.solanaPubkey
+        FROM account_performance ap
+            LEFT OUTER JOIN signers.signers_normalized sn ON sn.ethAddress = ap.account
         ORDER BY rank
         """)
 
@@ -117,8 +140,8 @@ def recreate_cache_table():
         # Insert fetched rows into the cache table
         cache_cursor.executemany("""
         INSERT OR REPLACE INTO cache_table 
-            (account, rank, total_blocks, super_blocks, xnm, xblk, xuni, hashes_per_second) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (account, rank, total_blocks, super_blocks, xnm, xblk, xuni, hashes_per_second, sol_address) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, rows)
         cache_conn.commit()
 
