@@ -92,6 +92,7 @@ def recreate_cache_table():
                 account,
                 CASE
                     WHEN block_id > 29818420 THEN 2
+                    WHEN block_id >= 62500001 THEN 3
                     ELSE 1
                 END AS epoch,
                 COUNT(b.block_id) AS blocks_per_epoch
