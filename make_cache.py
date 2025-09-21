@@ -91,7 +91,7 @@ def recreate_cache_table():
             SELECT
                 account,
                 CASE
-                    WHEN block_id >= 62500001 THEN 3
+                    WHEN block_id >= 63158400 THEN 3
                     WHEN block_id > 29818420 THEN 2
                     ELSE 1
                 END AS epoch,
