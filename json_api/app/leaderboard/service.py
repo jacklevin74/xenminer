@@ -25,6 +25,19 @@ def fetch_total_blocks():
     return Blocks.query.order_by(Blocks.block_id.desc()).first()
 
 
+def fetch_token_totals():
+    result = Cache.query.with_entities(
+        func.sum(Cache.xnm).label("total_xnm"),
+        func.sum(Cache.xuni).label("total_xuni"),
+        func.sum(Cache.xblk).label("total_xblk"),
+    ).first()
+    return {
+        "totalXnm": result.total_xnm or 0,
+        "totalXuni": result.total_xuni or 0,
+        "totalXblk": result.total_xblk or 0,
+    }
+
+
 def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
     difficulty = get_difficulty()
     cache_data = fetch_cache_data(limit, offset, require_sol_address)
