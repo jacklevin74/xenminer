@@ -69,6 +69,7 @@ def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
         "totalMiners": latest_miners,
         "totalBlocks": total_blocks,
         "difficulty": difficulty,
+        **token_totals,
         "miners": miners,
     }
 
