@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from ..models.blockrate import BlockRate
 from ..models.blocks import Blocks
 from ..models.cache import Cache
@@ -44,6 +45,7 @@ def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
     latest_rate = fetch_latest_rate()
     latest_miners = fetch_latest_miners()
     total_blocks = fetch_total_blocks()
+    token_totals = fetch_token_totals()
 
     latest_rate = latest_rate.rate if latest_rate else 0
     latest_miners = latest_miners.total_miners if latest_miners else 0
