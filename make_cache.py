@@ -9,7 +9,7 @@ def recreate_cache_table():
     logging.info("Generating cache table")
 
     try:
-        original_conn = sqlite3.connect("blocks.db")
+        original_conn = sqlite3.connect("file:blocks.db", uri=True)
     except sqlite3.OperationalError:
         logging.error("Failed to connect to blocks.db. Please ensure the database is available.")
         return
@@ -75,7 +75,7 @@ def recreate_cache_table():
             pass
 
         # Attach the signer_data database to use in joins
-        original_cursor.execute("ATTACH DATABASE 'signer_data.db' AS signers")
+        original_cursor.execute("ATTACH DATABASE 'file:signer_data.db?immutable=1' AS signers")
 
         # Fetch data from the original database and populate the cache table
         original_cursor.execute("""
