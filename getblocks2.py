@@ -125,7 +125,7 @@ def get_records_all(page):
         # Check if xuni_id is present
         if row[2] is not None:
             record['xuni_id'] = row[2]
-        
+
         records.append(record)
 
     return jsonify(records)
@@ -151,50 +151,53 @@ def get_records(page):
     conn = sqlite3.connect('blocks.db', timeout=10)
     c = conn.cursor()
 
-
     # Query to fetch records based on block_id range
     c.execute("""
-        SELECT allblocks2.id, blocks.block_id as block_id, blocks.hash_to_verify, blocks.key, blocks.account, blocks.created_at, 'blocks' as label
-        FROM allblocks2
-        JOIN blocks ON allblocks2.block_id = blocks.block_id
-        WHERE allblocks2.id > ? AND allblocks2.id <= ?
+        SELECT block_id,
+               hash_to_verify,
+               key,
+               account, 
+               created_at, 
+               'blocks' as label
+        FROM blocks
+        WHERE block_id > ? AND block_id <= ?
     """, (id_min, id_max,))
     rows_block_id = c.fetchall()
 
     # Query to fetch records based on xuni_id range
     c.execute("""
-        SELECT allblocks2.id, xuni.Id as xuni_id, xuni.hash_to_verify, xuni.key, xuni.account, xuni.created_at, 'xuni' as label
-        FROM allblocks2
-        JOIN xuni ON allblocks2.xuni_id = xuni.Id
-        WHERE allblocks2.id > ? AND allblocks2.id <= ?
+        SELECT Id AS xuni_id, ◊
+               hash_to_verify, 
+               key, 
+               account,
+               created_at, 
+               'xuni' as label
+        FROM xuni
+        WHERE Id > ? AND Id <= ?
     """, (id_min, id_max,))
     rows_xuni_id = c.fetchall()
 
     conn.close()
 
-    # Print debug information
     print(f'Fetched {len(rows_block_id)} records with block_id and {len(rows_xuni_id)} records with xuni_id')
 
-    # Convert fetched rows into a list of dictionaries
     records = []
-    block_id_count = 0  # Initialize block_id_count
-    xuni_id_count = 0   # Initialize xuni_id_count
+    block_id_count = 0
+    xuni_id_count = 0
 
     for row in rows_block_id + rows_xuni_id:
-        #print(row)
         record = {
-            'id': row[0],
-            'hash_to_verify': row[2],
-            'key': row[3],
-            'account': row[4],
-            'date': row[5]  # Adjust the index if necessary
+            'hash_to_verify': row[1],
+            'key': row[2],
+            'account': row[3],
+            'date': row[4]
         }
 
-        if row[6] == 'blocks':  # Assuming label is the 7th element in the row
-            record['block_id'] = row[1]
+        if row[5] == 'blocks':
+            record['block_id'] = row[0]
             block_id_count += 1
-        elif row[6] == 'xuni':  # Assuming label is the 7th element in the row
-            record['xuni_id'] = row[1]
+        elif row[5] == 'xuni':
+            record['xuni_id'] = row[0]
             xuni_id_count += 1
 
         records.append(record)
@@ -202,3 +205,6 @@ def get_records(page):
     print(f'block_id count: {block_id_count}')
     print(f'xuni_id count: {xuni_id_count}')
     return records
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5566, debug=True)
