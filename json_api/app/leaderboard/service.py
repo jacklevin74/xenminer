@@ -39,6 +39,19 @@ def fetch_token_totals():
     }
 
 
+def fetch_sol_token_totals():
+    result = Cache.query.with_entities(
+        func.sum(Cache.xnm).label("total_xnm"),
+        func.sum(Cache.xuni).label("total_xuni"),
+        func.sum(Cache.xblk).label("total_xblk"),
+    ).filter(Cache.sol_address.isnot(None)).first()
+    return {
+        "totalXnmWithSol": result.total_xnm or 0,
+        "totalXuniWithSol": result.total_xuni or 0,
+        "totalXblkWithSol": result.total_xblk or 0,
+    }
+
+
 def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
     difficulty = get_difficulty()
     cache_data = fetch_cache_data(limit, offset, require_sol_address)
@@ -46,6 +59,7 @@ def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
     latest_miners = fetch_latest_miners()
     total_blocks = fetch_total_blocks()
     token_totals = fetch_token_totals()
+    sol_token_totals = fetch_sol_token_totals()
 
     latest_rate = latest_rate.rate if latest_rate else 0
     latest_miners = latest_miners.total_miners if latest_miners else 0
@@ -72,6 +86,7 @@ def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
         "totalBlocks": total_blocks,
         "difficulty": difficulty,
         **token_totals,
+        **sol_token_totals,
         "miners": miners,
     }
 
