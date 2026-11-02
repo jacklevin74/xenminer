@@ -16,14 +16,17 @@ def index():
     limit = int(request.args.get("limit", 500))
     offset = int(request.args.get("offset", 0))
     require_sol_address = bool(request.args.get("require_sol_address", False))
+    string_values = bool(request.args.get("string_values", False))
 
-    return jsonify(get_leaderboard(limit, offset, require_sol_address))
+    return jsonify(get_leaderboard(limit, offset, require_sol_address, string_values))
 
 
 @bp.route("/v1/leaderboard/<account>", methods=["GET"])
 @cache.cached(timeout=30, query_string=True)
 def show(account: str):
+    string_values = bool(request.args.get("string_values", False))
     try:
-        return jsonify(get_leaderboard_entry(account))
+        return jsonify(get_leaderboard_entry(account, string_values))
     except ValueError:
         return jsonify({"error": "Account not found"}), 404
+

@@ -43,43 +43,37 @@ def get_last_block():
 @app.route('/getblocks/all/<int:number>', methods=['GET'])
 def get_combined_records(number):
     offset = (number - 1) * 100  # Calculate the offset based on the number input
+    new_offset = offset + 1400000
 
     conn = sqlite3.connect('blocks.db', timeout=10)
     c = conn.cursor()
 
-    # Fetch 100 records from the blocks table based on the offset
-    c.execute("SELECT * FROM blocks ORDER BY block_id ASC LIMIT 100 OFFSET ?", (offset,))
-    block_rows = c.fetchall()
-
-    combined_records = []
-
-    # Convert fetched rows from blocks table into dictionaries and append to combined_records
-    for row in block_rows:
-        record = {
-            'block_id': row[0],
-            'hash_to_verify': row[1],
-            'key': row[2],
-            'account': row[3],
-            'date': row[4]
-        }
-        combined_records.append(record)
-
-    # Only fetch records from the xuni table if the number is 10000 or greater
-    if number >= 1:
-        # Fetch 100 records from the xuni table based on the offset
-        c.execute("SELECT * FROM xuni ORDER BY Id ASC LIMIT 100 OFFSET ?", (offset,))
-        xuni_rows = c.fetchall()
-
-        # Convert fetched rows from xuni table into dictionaries and append to combined_records
-        for row in xuni_rows:
-            record = {
-                'xuni_id': row[0],
+    # Define a function to convert fetched rows into dictionaries
+    def convert_rows(rows, id_key):
+        return [
+            {
+                id_key: row[0],
                 'hash_to_verify': row[1],
                 'key': row[2],
                 'account': row[3],
                 'date': row[4]
             }
-            combined_records.append(record)
+            for row in rows
+        ]
+
+    # Fetch and convert records from blocks table
+    c.execute("SELECT * FROM blocks ORDER BY block_id ASC LIMIT 100 OFFSET ?", (offset,))
+    block_records = convert_rows(c.fetchall(), 'block_id')
+
+    combined_records = block_records
+
+    # Only fetch records from the xuni table if the number is 10000 or greater
+    if number >= 10000:
+        print ("Fetch xuni ", number, new_offset)
+        # Fetch and convert records from xuni table
+        c.execute("SELECT * FROM xuni ORDER BY Id ASC LIMIT 100 OFFSET ?", (new_offset,))
+        xuni_records = convert_rows(c.fetchall(), 'xuni_id')
+        combined_records.extend(xuni_records)  # Append xuni_records to combined_records
 
     conn.close()
     return jsonify(combined_records)
@@ -111,4 +105,3 @@ def get_records(page):
         records.append(record)
 
     return jsonify(records)
-

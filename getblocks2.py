@@ -132,11 +132,12 @@ def get_records_all(page):
 
 @app.route('/download', methods=['GET'])
 def download_file():
-    path = f"/root/dev/blockchain.db.arc.gz"
+#    path = f"/root/dev/blockchain.db.arc.gz"
+    path = f"/mnt/sdb//blockchain.db"
     return send_file(path, as_attachment=True)
 
 
-
+# this is the entry used by syncnode
 @app.route('/getallblocks2/<int:page>', methods=['GET'])
 def get_records_all2(page):
 

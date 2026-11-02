@@ -50,11 +50,14 @@ async def server_handler(websocket, path):
     message_queues[client_ip] = asyncio.Queue()
     new_data_event[client_ip] = asyncio.Event()
     connected_clients[client_ip] = websocket
+    client_ip = websocket.remote_address[0]
+    print(f"Client {client_ip} connected")
 
     async def receive_messages():
         async for message in websocket:
             try:
                 data = json.loads(message)
+                print (data)
                 if isinstance(data, dict) and 'block_id' in data and 'hash' in data and 'time_diff' in data:
                     # Processing of the message
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
@@ -72,9 +75,10 @@ async def server_handler(websocket, path):
     try:
         if error_counters.get(client_ip, 0) <= MAX_ERRORS:
             print("Created send message task for: ", client_ip)
-            send_task = send_messages(client_ip, websocket, message_queues[client_ip])
+            #send_task = send_messages(client_ip, websocket, message_queues[client_ip])
             receive_task = receive_messages()
-            await asyncio.gather(send_task, receive_task)
+            #await asyncio.gather(send_task, receive_task)
+            await asyncio.gather(receive_task)
         else:
             print(f"Client {client_ip} is blocked due to excessive errors.")
 
@@ -148,16 +152,17 @@ async def query_data():
         await asyncio.sleep(0.5)
     conn.close()
 
-init_db()
+#init_db()
 
 async def start_server():
     # Start the WebSocket server
     async with websockets.serve(server_handler, "0.0.0.0", 6668, max_size=None, ping_interval=None) as server:
         print_task = asyncio.create_task(print_error_counters_periodically())
-        query_task = asyncio.create_task(query_data())
+        #query_task = asyncio.create_task(query_data())
 
         # Wait for all tasks to complete
-        await asyncio.gather(print_task, query_task)
+        #await asyncio.gather(print_task, query_task)
+        await asyncio.gather(print_task)
 
 # Run the server
 asyncio.run(start_server())

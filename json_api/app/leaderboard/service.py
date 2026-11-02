@@ -7,6 +7,10 @@ from gpage import get_difficulty
 from eth_utils import to_checksum_address
 
 
+def _fmt(value, as_string):
+    return str(value) if as_string else value
+
+
 def fetch_cache_data(limit, offset, require_sol_address):
     query = Cache.query.order_by(Cache.total_blocks.desc())
     if require_sol_address:
@@ -26,40 +30,41 @@ def fetch_total_blocks():
     return Blocks.query.order_by(Blocks.block_id.desc()).first()
 
 
-def fetch_token_totals():
+def fetch_token_totals(as_string=False):
     result = Cache.query.with_entities(
         func.sum(Cache.xnm).label("total_xnm"),
         func.sum(Cache.xuni).label("total_xuni"),
         func.sum(Cache.xblk).label("total_xblk"),
     ).first()
     return {
-        "totalXnm": result.total_xnm or 0,
-        "totalXuni": result.total_xuni or 0,
-        "totalXblk": result.total_xblk or 0,
+        "totalXnm": _fmt(result.total_xnm or 0, as_string),
+        "totalXuni": _fmt(result.total_xuni or 0, as_string),
+        "totalXblk": _fmt(result.total_xblk or 0, as_string),
     }
 
 
-def fetch_sol_token_totals():
+def fetch_sol_token_totals(as_string=False):
     result = Cache.query.with_entities(
         func.sum(Cache.xnm).label("total_xnm"),
         func.sum(Cache.xuni).label("total_xuni"),
         func.sum(Cache.xblk).label("total_xblk"),
     ).filter(Cache.sol_address.isnot(None)).first()
     return {
-        "totalXnmWithSol": result.total_xnm or 0,
-        "totalXuniWithSol": result.total_xuni or 0,
-        "totalXblkWithSol": result.total_xblk or 0,
+        "totalXnmWithSol": _fmt(result.total_xnm or 0, as_string),
+        "totalXuniWithSol": _fmt(result.total_xuni or 0, as_string),
+        "totalXblkWithSol": _fmt(result.total_xblk or 0, as_string),
     }
 
 
-def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
+def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False,
+                    string_values: bool = False):
     difficulty = get_difficulty()
     cache_data = fetch_cache_data(limit, offset, require_sol_address)
     latest_rate = fetch_latest_rate()
     latest_miners = fetch_latest_miners()
     total_blocks = fetch_total_blocks()
-    token_totals = fetch_token_totals()
-    sol_token_totals = fetch_sol_token_totals()
+    token_totals = fetch_token_totals(as_string=string_values)
+    sol_token_totals = fetch_sol_token_totals(as_string=string_values)
 
     latest_rate = latest_rate.rate if latest_rate else 0
     latest_miners = latest_miners.total_miners if latest_miners else 0
@@ -72,9 +77,9 @@ def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
             "blocks": r.total_blocks,
             "hashRate": round(r.hashes_per_second, 2),
             "superBlocks": r.super_blocks,
-            "xnm": r.xnm,
-            "xblk": r.xblk,
-            "xuni": r.xuni,
+            "xnm": _fmt(r.xnm, string_values),
+            "xblk": _fmt(r.xblk, string_values),
+            "xuni": _fmt(r.xuni, string_values),
             "solAddress": r.sol_address.strip() if r.sol_address else None,
         }
         for i, r in enumerate(cache_data)
@@ -91,7 +96,7 @@ def get_leaderboard(limit: int, offset: int, require_sol_address: bool = False):
     }
 
 
-def get_leaderboard_entry(account: str):
+def get_leaderboard_entry(account: str, string_values: bool = False):
     result = Cache.query.filter_by(account=account.lower()).first()
     if not result:
         raise ValueError("Account not found")
@@ -102,8 +107,9 @@ def get_leaderboard_entry(account: str):
         "hashRate": round(result.hashes_per_second, 2),
         "superBlocks": result.super_blocks,
         "rank": result.rank,
-        "xnm": result.xnm,
-        "xblk": result.xblk,
-        "xuni": result.xuni,
+        "xnm": _fmt(result.xnm, string_values),
+        "xblk": _fmt(result.xblk, string_values),
+        "xuni": _fmt(result.xuni, string_values),
         "solAddress": result.sol_address.strip() if result.sol_address else None,
     }
+

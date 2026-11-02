@@ -65,7 +65,7 @@ def read_difficulty_level(file_path):
 
 # Function to get difficulty level
 def get_difficulty(account=None):
-
+    
     file_path = "/home/ubuntu/mining/diff2.chain"
     try:
         new_difficulty_level = int(read_difficulty_level(file_path))
@@ -78,7 +78,7 @@ def get_difficulty(account=None):
 # Function to get difficulty level
 def get_difficulty2(account=None):
     global cached_difficulty, last_fetched_time  # Declare as global to modify them
-
+    
     # Check if it has been more than 60 seconds since the last fetch
     current_time = time.time()
     if current_time - last_fetched_time < 10:
@@ -155,7 +155,7 @@ def blockrate_per_day():
             ORDER BY num_blocks DESC 
             LIMIT 1000
             ''')
-
+            
             rows = c.fetchall()
 
             # Convert rows into a list of dictionaries for JSON representation
@@ -169,6 +169,7 @@ def blockrate_per_day():
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
     return redirect("https://explorer.xenblocks.io")
+
 
 @app.route('/get_balance/<account>', methods=['GET'])
 def get_balance(account):
@@ -221,7 +222,7 @@ def total_blocks():
 
     conn.close()
 
-    return jsonify({'total_blocks_top100': last_block_id})
+    return jsonify({'total_blocks_top100': last_block_id}) 
 
 
 
@@ -409,7 +410,7 @@ def verify_hash():
 
     #if f'm={difficulty}' not in hash_to_verify:
     #    print ("Compare diff ", submitted_difficulty, int(difficulty))
-    if submitted_difficulty < int(difficulty):
+    if submitted_difficulty < int(difficulty): 
     #if abs(submitted_difficulty - int(difficulty)) > 50:
 
         print ("This Generates 401 for difficulty being too low", submitted_difficulty, int(difficulty))
@@ -417,7 +418,7 @@ def verify_hash():
         log_verification_failure(error_message, account)
         return jsonify({"message": error_message}), 401
 
-
+    
     stored_targets = ['XEN11']  # Adjusted list to exclude 'XUNI' since we will search for it differently
     found = False
 
@@ -454,7 +455,7 @@ def verify_hash():
         is_verified = False
 
     #if argon2.verify(key, hash_to_verify):
-    if is_verified:
+    if is_verified: 
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         is_xen11_present = 'XEN11' in hash_to_verify[-87:]
         is_xuni_present = re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None
@@ -470,7 +471,7 @@ def verify_hash():
                 print("XUNI submitted and added to batch")
                 #c.execute('''INSERT INTO xuni (hash_to_verify, key, account)
                  #     VALUES (?, ?, ?)''', (hash_to_verify, key, account))
-
+                
                 #send_post_request(hash_to_verify, key, account, "1")
                 insert_query = '''INSERT INTO xuni (hash_to_verify, key, account) VALUES (?, ?, ?)'''
                 data_tuple = (hash_to_verify, key, account)
@@ -500,8 +501,8 @@ def verify_hash():
              #   VALUES (?, ?, ?)''', (account, timestamp, attempts))
             print("This Generates 200 for difficulty being good", submitted_difficulty, int(difficulty))
             print("Inserting hash into db: ", hash_to_verify)
-
-
+            
+            
             conn.commit()
 
         except sqlite3.IntegrityError as e:
@@ -509,7 +510,7 @@ def verify_hash():
             print(f"Error: {error_message} ", hash_to_verify, key, account)
             return jsonify({"message": f"Block already exists, continue"}), 400
 
-        finally:
+        finally: 
             conn.close()
 
         return jsonify({"message": "Hash verified successfully and block saved."}), 200
@@ -642,3 +643,4 @@ def total_blocks2():
     conn.close()
 
     return jsonify({"total_blocks": result[0]}), 200
+

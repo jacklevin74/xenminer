@@ -3,7 +3,7 @@ import sqlite3
 import threading
 from datetime import datetime
 
-MIN_DIFFICULTY = 100
+MIN_DIFFICULTY = 10000
 
 logging.basicConfig(
     filename="difficulty.log",
@@ -73,8 +73,9 @@ def adjust_difficulty():
     except Exception:
         logger.exception("Error adjusting difficulty")
     finally:
-        threading.Timer(300, adjust_difficulty).start()
+        threading.Timer(3000, adjust_difficulty).start()
 
 
 logger.info("Starting the script...")
 adjust_difficulty()
+
