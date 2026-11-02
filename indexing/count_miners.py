@@ -6,7 +6,7 @@ from datetime import datetime
 def count_miners_and_insert_into_db():
     # Run shell commands to count the number of unique miners
     try:
-        cmd = "tail -500000 access.log | grep verify | cut -d' ' -f1 | sort | uniq | wc -l"
+        cmd = "tail -5000000 access.log | grep verify | cut -d' ' -f1 | sort | uniq | wc -l"
         total_miners = subprocess.getoutput(cmd)
         total_miners = int(total_miners.strip())  # Convert the output to an integer
         
@@ -41,4 +41,3 @@ def start_timer():
 
 # Start the timer
 start_timer()
-
