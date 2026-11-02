@@ -29,14 +29,13 @@ def update_super_blocks():
             """
             )
 
-            # Fetch all hash_to_verify and account records from blocks table
+            # Iterate the cursor. fetchall() keeps every row of blocks in memory.
             cursor.execute("SELECT hash_to_verify, LOWER(account) AS account FROM blocks")
-            rows = cursor.fetchall()
 
             # Prepare a dictionary to keep counts
             super_block_counts = defaultdict(int)
 
-            for row in rows:
+            for row in cursor:
                 hash_to_verify, account_to_update = row
                 last_element = hash_to_verify.split("$")[-1]
                 hash_uppercase_only = "".join(filter(str.isupper, last_element))
