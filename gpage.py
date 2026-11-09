@@ -374,8 +374,7 @@ def verify_hash():
         worker_id = None  # Set worker_id to None if it's not a valid string of 3 characters or less
 
     hash_to_verify = data.get('hash_to_verify')
-    hash_to_verify = hash_to_verify if (hash_to_verify and len(hash_to_verify) <= 150) else None
-    is_xuni_present = re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None
+    hash_to_verify = hash_to_verify if (isinstance(hash_to_verify, str) and hash_to_verify and len(hash_to_verify) <= 150) else None
     key = data.get('key')
     key = key if (key and len(key) <= 128) else None
     account = data.get('account')
@@ -384,6 +383,12 @@ def verify_hash():
         account = str(account).lower().replace("'", "").replace('"', '')
         account = account if len(account) <= 43 else None
 
+    # Check for missing data before any check reads hash_to_verify or key.
+    # A missing hash gave a TypeError and a 500.
+    if not hash_to_verify or not key or not account:
+        return jsonify({"error": "Missing hash_to_verify, key, or account"}), 400
+
+    is_xuni_present = re.search('XUNI[0-9]', hash_to_verify[-87:]) is not None
     attempts = data.get('attempts')
     difficulty = 0
 
@@ -394,10 +399,6 @@ def verify_hash():
     #if not check_fourth_element(hash_to_verify):
     if not check_salt_format_and_ethereum_address(hash_to_verify):
         return jsonify({"error": "Invalid salt format"}), 400
-
-    # Check for missing data
-    if not hash_to_verify or not key or not account:
-        return jsonify({"error": "Missing hash_to_verify, key, or account"}), 400
 
     # Get difficulty level from the database
     old_difficulty = difficulty;
@@ -478,6 +479,8 @@ def verify_hash():
                 success = insert_with_retry(c, insert_query, data_tuple)
                 if not success:
                     print("Could not insert into the database after multiple retries.")
+                    # The block is not saved. A 200 here lost it, and the miner did not retry.
+                    return jsonify({"message": "Database busy, block not saved. Submit it again."}), 503
 
             elif is_xen11_present:  # no time restrictions for XEN11
                 print("XEN11 hash added to batch")
@@ -493,6 +496,8 @@ def verify_hash():
                 success = insert_with_retry(c, insert_query, data_tuple)
                 if not success:
                     print("Could not insert into the database after multiple retries.")
+                    # The block is not saved. A 200 here lost it, and the miner did not retry.
+                    return jsonify({"message": "Database busy, block not saved. Submit it again."}), 503
 
             else:
                 return jsonify({"message": "XUNI found outside of time window"}), 401
