@@ -479,8 +479,9 @@ def verify_hash():
                 success = insert_with_retry(c, insert_query, data_tuple)
                 if not success:
                     print("Could not insert into the database after multiple retries.")
-                    # The block is not saved. A 200 here lost it, and the miner did not retry.
-                    return jsonify({"message": "Database busy, block not saved. Submit it again."}), 503
+                    # The block is not saved. A 200 here lost it. Return 500: the miners
+                    # retry on 500, and the insert was not committed, so a retry is safe.
+                    return jsonify({"message": "Database busy, block not saved. Submit it again."}), 500
 
             elif is_xen11_present:  # no time restrictions for XEN11
                 print("XEN11 hash added to batch")
@@ -496,8 +497,9 @@ def verify_hash():
                 success = insert_with_retry(c, insert_query, data_tuple)
                 if not success:
                     print("Could not insert into the database after multiple retries.")
-                    # The block is not saved. A 200 here lost it, and the miner did not retry.
-                    return jsonify({"message": "Database busy, block not saved. Submit it again."}), 503
+                    # The block is not saved. A 200 here lost it. Return 500: the miners
+                    # retry on 500, and the insert was not committed, so a retry is safe.
+                    return jsonify({"message": "Database busy, block not saved. Submit it again."}), 500
 
             else:
                 return jsonify({"message": "XUNI found outside of time window"}), 401
